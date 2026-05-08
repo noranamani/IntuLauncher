@@ -1,14 +1,20 @@
 <resources>
-    <color name="lime">#D9FF7F</color>
-    <color name="background_commute">#09111F</color>
-    <color name="background_focus">#111723</color>
-    <color name="background_home">#0E1714</color>
-    <color name="panel_surface">#1B2334</color>
-    <color name="anchor_surface">#151D2B</color>
-    <color name="chip_surface">#263249</color>
-    <color name="panel_stroke">#32415C</color>
+    <color name="lime">#DDFB8A</color>
+    <color name="background_commute">#0A1630</color>
+    <color name="background_focus">#132338</color>
+    <color name="background_home">#0E1626</color>
+    <color name="background_night">#070C15</color>
+    <color name="background_ambient">#17374E</color>
+    <color name="panel_surface">#172334</color>
+    <color name="panel_surface_soft">#203147</color>
+    <color name="anchor_surface">#13263F</color>
+    <color name="chip_surface">#26415F</color>
+    <color name="panel_stroke">#37577C</color>
     <color name="text_primary">#F6F8FD</color>
-    <color name="text_secondary">#C8D1E5</color>
-    <color name="text_muted">#97A3BD</color>
+    <color name="text_secondary">#CAD7EA</color>
+    <color name="text_muted">#98ACC7</color>
+    <color name="accent_move">#7FDBB8</color>
+    <color name="accent_night">#8FB9FF</color>
+    <color name="accent_notification">#FFB778</color>
+    <color name="accent_widget">#9AE4FF</color>
 </resources>
-

@@ -97,6 +97,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 初期設定ウィザードから戻った後に UI を更新するランチャーです。 */
+    private val setupWizardLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (this::onboardingSupportPreferences.isInitialized && onboardingSupportPreferences.hasCompletedSetup()) {
+            refreshUi()
+        }
+    }
+
     /**
      * 初期化処理を行い、イベントハンドラを設定します。
      */
@@ -146,7 +153,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         binding.quickSetupButton.setOnClickListener {
-            showQuickSetupDialog()
+            openSetupWizard()
         }
         binding.migrationInsightButton.setOnClickListener {
             showMigrationInsightDialog()
@@ -189,10 +196,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 初回起動時は最初のランキング方針を早めに決められるよう、導入ダイアログを出します。
-        if (coldStartPreferences.getSelectedProfile() == null) {
+        // 初回起動時はカード型ウィザードを優先し、負担の少ない設定フローへ誘導します。
+        if (!onboardingSupportPreferences.hasCompletedSetup()) {
             binding.root.post {
-                showColdStartProfileDialog()
+                openSetupWizard()
             }
         }
         binding.root.post {
@@ -236,6 +243,7 @@ class MainActivity : AppCompatActivity() {
 
         renderProfile(launcherProfile, snapshot, coldStartStatus)
         applyVisualMode(launcherProfile, snapshot)
+        applyInteractionSizing(launcherProfile, snapshot)
         renderNotificationInsight(launcherProfile)
         renderHostedWidget()
         renderDynamicSlots(slots, coldStartStatus)
@@ -300,7 +308,12 @@ class MainActivity : AppCompatActivity() {
         resolvedSlot: ResolvedSlot?,
         coldStartStatus: ColdStartStatus,
     ) {
-        card.setCardBackgroundColor(ContextCompat.getColor(this, R.color.panel_surface))
+        val backgroundColor = if (resolvedSlot?.spec?.kind == SlotKind.DISCOVERY) {
+            R.color.anchor_surface
+        } else {
+            R.color.panel_surface_soft
+        }
+        card.setCardBackgroundColor(ContextCompat.getColor(this, backgroundColor))
         card.alpha = if (coldStartStatus.isLearning) 0.96f else 1.0f
 
         // 候補が解決できない場合でも、全アプリ一覧へ逃がして操作を止めないようにします。
@@ -315,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         iconView.setImageDrawable(resolvedSlot.app.icon)
-        titleView.text = "${resolvedSlot.spec.title} / ${resolvedSlot.app.label}"
+        titleView.text = resolvedSlot.app.label
 
         val slotKindLabel = if (resolvedSlot.spec.kind == SlotKind.DISCOVERY) {
             getString(R.string.slot_kind_discovery)
@@ -328,7 +341,6 @@ class MainActivity : AppCompatActivity() {
             ""
         }
         subtitleView.text = "$learningLabel$slotKindLabel / ${resolvedSlot.actionHint}"
-        card.setOnClickListener { launchApp(resolvedSlot.app) }
         card.setOnClickListener {
             onboardingSupportPreferences.recordPredictionHit()
             launchApp(resolvedSlot.app)
@@ -340,25 +352,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun renderAnchorSlots() {
         bindAnchorSlot(
-            spec = defaultAnchorSlots[0],
+            spec = defaultAnchorSlots.first(),
             card = binding.anchorOneCard,
             iconView = binding.anchorOneIcon,
             titleView = binding.anchorOneTitle,
             subtitleView = binding.anchorOneSubtitle,
-        )
-        bindAnchorSlot(
-            spec = defaultAnchorSlots[1],
-            card = binding.anchorTwoCard,
-            iconView = binding.anchorTwoIcon,
-            titleView = binding.anchorTwoTitle,
-            subtitleView = binding.anchorTwoSubtitle,
-        )
-        bindAnchorSlot(
-            spec = defaultAnchorSlots[2],
-            card = binding.anchorThreeCard,
-            iconView = binding.anchorThreeIcon,
-            titleView = binding.anchorThreeTitle,
-            subtitleView = binding.anchorThreeSubtitle,
         )
     }
 
@@ -377,7 +375,7 @@ class MainActivity : AppCompatActivity() {
             ?: AppCatalog.findBestMatch(launchableApps, spec.defaultKeywords)
 
         iconView.setImageDrawable(resolvedApp?.icon ?: defaultAnchorIcon())
-        titleView.text = spec.title
+        titleView.text = getString(R.string.fixed_slot_title)
         subtitleView.text = resolvedApp?.label ?: getString(R.string.anchor_unset)
 
         card.setOnClickListener {
@@ -401,7 +399,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAnchorPicker(spec: AnchorSlotSpec, isPinned: Boolean) {
         val adapter = AppPickerAdapter(this, launchableApps)
         val dialog = AlertDialog.Builder(this)
-            .setTitle("${spec.title}: ${getString(R.string.app_picker_title)}")
+            .setTitle(getString(R.string.app_picker_title))
             .setAdapter(adapter) { _, which ->
                 val app = launchableApps[which]
                 anchorPreferences.setPinnedPackage(spec.key, app.packageName)
@@ -675,6 +673,13 @@ class MainActivity : AppCompatActivity() {
         val insight = notificationInsightStore.buildInsight(profile)
         binding.notificationSummaryText.text = insight.summary
         binding.notificationPromptText.text = insight.prompt
+    }
+
+    /**
+     * カード型の初期設定ウィザードを開きます。
+     */
+    private fun openSetupWizard() {
+        setupWizardLauncher.launch(Intent(this, SetupWizardActivity::class.java))
     }
 
     /**
@@ -1034,7 +1039,7 @@ class MainActivity : AppCompatActivity() {
         when (visualModePreferences.getVisualMode()) {
             VisualMode.AMBIENT -> {
                 val state = ambientVisualManager.buildAmbientState(profile, snapshot, notificationWeight)
-                binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                binding.root.setBackgroundColor(state.backgroundColor)
                 binding.rootLayout.background = null
                 binding.rootLayout.setBackgroundColor(state.backgroundColor)
                 binding.visualModeChip.text = state.mode.displayName
@@ -1046,9 +1051,11 @@ class MainActivity : AppCompatActivity() {
                 val state = ambientVisualManager.buildFixedState(fixedUri != null)
                 val fixedDrawable = fixedUri?.let { loadFixedBackgroundDrawable(it) }
                 if (fixedDrawable != null) {
+                    binding.root.setBackgroundColor(ContextCompat.getColor(this, R.color.background_focus))
                     binding.rootLayout.background = fixedDrawable
                 } else {
                     binding.rootLayout.background = null
+                    binding.root.setBackgroundColor(state.backgroundColor)
                     binding.rootLayout.setBackgroundColor(state.backgroundColor)
                 }
                 binding.visualModeChip.text = state.mode.displayName
@@ -1060,6 +1067,42 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * 移動中モードではボタンを大きくし、夜間は少し落ち着いた密度へ戻します。
+     */
+    private fun applyInteractionSizing(
+        profile: LauncherProfile,
+        snapshot: ContextSnapshot,
+    ) {
+        val isMoveMode = profile == LauncherProfile.MORNING_COMMUTE
+        val isNightMode = snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4
+        val slotHeight = when {
+            isMoveMode -> 196
+            isNightMode -> 156
+            else -> 168
+        }
+        val anchorHeight = if (isMoveMode) 118 else 104
+
+        listOf(binding.slotOneCard, binding.slotTwoCard, binding.slotThreeCard).forEach { card ->
+            val params = card.layoutParams
+            params.height = dp(slotHeight)
+            card.layoutParams = params
+            card.radius = dp(if (isMoveMode) 30 else 28).toFloat()
+        }
+
+        binding.anchorOneCard.layoutParams = binding.anchorOneCard.layoutParams.apply {
+            height = dp(anchorHeight)
+        }
+        binding.anchorOneCard.radius = dp(if (isMoveMode) 34 else 30).toFloat()
+    }
+
+    /**
+     * dp を整数ピクセルへ変換します。
+     */
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
     /**

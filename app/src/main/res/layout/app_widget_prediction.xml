@@ -2,48 +2,72 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetRootLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#101826"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="0dp">
 
-    <TextView
-        android:id="@+id/widgetProfileText"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#F6F8FD"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+        android:background="#16273D"
+        android:orientation="vertical"
+        android:padding="18dp">
 
-    <TextView
-        android:id="@+id/widgetSummaryText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="#C8D1E5"
-        android:textSize="12sp" />
+        <TextView
+            android:id="@+id/widgetProfileText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#9AE4FF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widgetSlotOneText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:textColor="#F6F8FD"
-        android:textSize="13sp" />
+        <TextView
+            android:id="@+id/widgetSummaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#F3F8FF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widgetSlotTwoText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="#F6F8FD"
-        android:textSize="13sp" />
+        <TextView
+            android:id="@+id/widgetSlotOneText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="#25405F"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="12dp"
+            android:textColor="#F6F8FD"
+            android:textSize="14sp" />
 
-    <TextView
-        android:id="@+id/widgetSlotThreeText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="#F6F8FD"
-        android:textSize="13sp" />
+        <TextView
+            android:id="@+id/widgetSlotTwoText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#213852"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="12dp"
+            android:textColor="#F6F8FD"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/widgetSlotThreeText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#1C3048"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="12dp"
+            android:textColor="#F6F8FD"
+            android:textSize="14sp" />
+    </LinearLayout>
 </LinearLayout>
