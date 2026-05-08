@@ -1,7 +1,9 @@
 package jp.co.cssservice.intulauncher
 
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -23,17 +25,23 @@ class MainActivity : AppCompatActivity() {
     /** 端末内の起動可能アプリ一覧を取得するカタログです。 */
     private lateinit var appCatalog: AppCatalog
 
-    /** アンカースロットの固定状態を保存する設定です。 */
+    /** アンカースロットの固定設定を保持する設定クラスです。 */
     private lateinit var anchorPreferences: AnchorPreferences
 
-    /** 現在のコンテキスト情報を取得する読み取りクラスです。 */
+    /** 初回導入時のプロファイルと学習期間を管理する設定クラスです。 */
+    private lateinit var coldStartPreferences: ColdStartPreferences
+
+    /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
+    private lateinit var usageStatsImporter: UsageStatsImporter
+
+    /** 現在のコンテキスト信号を読み取るクラスです。 */
     private lateinit var signalReader: ContextSignalReader
 
-    /** 現在メモリ上に保持している起動可能アプリ一覧です。 */
+    /** アンカースロットやアプリ一覧ダイアログで使う全アプリ一覧です。 */
     private var launchableApps: List<LaunchableApp> = emptyList()
 
     /**
-     * 画面初期化と固定 UI イベント設定を行います。
+     * 初期化処理を行い、イベントハンドラを設定します。
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +50,8 @@ class MainActivity : AppCompatActivity() {
 
         appCatalog = AppCatalog(this)
         anchorPreferences = AnchorPreferences(this)
+        coldStartPreferences = ColdStartPreferences(this)
+        usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
 
         binding.openAllAppsButton.setOnClickListener {
@@ -49,10 +59,27 @@ class MainActivity : AppCompatActivity() {
                 launchApp(app)
             }
         }
+        binding.profileChip.setOnClickListener {
+            showColdStartProfileDialog()
+        }
+
+        // 利用統計アクセスが未許可の間だけ、状態表示から設定画面へ移動できるようにします。
+        binding.coldStartStatusText.setOnClickListener {
+            if (!usageStatsImporter.hasAccessPermission()) {
+                openUsageAccessSettings()
+            }
+        }
+
+        // 初回起動時は最初のランキング方針を早めに決められるよう、導入ダイアログを出します。
+        if (coldStartPreferences.getSelectedProfile() == null) {
+            binding.root.post {
+                showColdStartProfileDialog()
+            }
+        }
     }
 
     /**
-     * ホーム画面へ戻るたびに最新のコンテキストで UI を再構成します。
+     * 画面復帰時に最新のコンテキストと学習状態で再描画します。
      */
     override fun onResume() {
         super.onResume()
@@ -60,42 +87,72 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * コンテキスト取得から UI 反映までを一括で更新します。
+     * コンテキスト、コールドスタート状態、アンカー設定をまとめて描画します。
      */
     private fun refreshUi() {
         launchableApps = appCatalog.loadLaunchableApps()
+        val usageRanking = usageStatsImporter.loadUsageRanking()
+        val rankedApps = rankAppsForColdStart(launchableApps, usageRanking)
         val snapshot = signalReader.readSnapshot()
-        val profile = LauncherProfile.from(snapshot)
-        val slots = profile.resolveSlots(launchableApps)
+        val launcherProfile = LauncherProfile.from(snapshot)
+        val coldStartStatus = buildColdStartStatus(usageRanking)
+        val slots = launcherProfile.resolveSlots(rankedApps)
 
-        renderProfile(profile, snapshot)
-        renderDynamicSlots(slots)
+        renderProfile(launcherProfile, snapshot, coldStartStatus)
+        renderDynamicSlots(slots, coldStartStatus)
         renderAnchorSlots()
     }
 
     /**
-     * ホーム全体のプロファイル情報を画面へ反映します。
+     * 現在のホームプロファイルと学習状態をヘッダへ反映します。
      */
-    private fun renderProfile(profile: LauncherProfile, snapshot: ContextSnapshot) {
+    private fun renderProfile(
+        profile: LauncherProfile,
+        snapshot: ContextSnapshot,
+        coldStartStatus: ColdStartStatus,
+    ) {
         binding.rootLayout.setBackgroundColor(ContextCompat.getColor(this, profile.backgroundColor))
         binding.headlineText.text = profile.headline
         binding.subheadlineText.text = profile.subheadline
-        binding.profileChip.text = profile.displayName
+        binding.profileChip.text = buildProfileChipLabel(profile, coldStartStatus)
         binding.timeText.text = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
         binding.signalSummaryText.text = buildSignalSummary(snapshot)
+        binding.coldStartStatusText.text = coldStartStatus.summary
+        binding.coldStartStatusText.alpha = if (coldStartStatus.isLearning) 0.95f else 0.78f
     }
 
     /**
-     * 3 つの動的スロットを順に描画します。
+     * 動的 3 スロットへコールドスタート状態を反映しながら描画します。
      */
-    private fun renderDynamicSlots(slots: List<ResolvedSlot>) {
-        bindDynamicSlot(binding.slotOneCard, binding.slotOneIcon, binding.slotOneTitle, binding.slotOneSubtitle, slots.getOrNull(0))
-        bindDynamicSlot(binding.slotTwoCard, binding.slotTwoIcon, binding.slotTwoTitle, binding.slotTwoSubtitle, slots.getOrNull(1))
-        bindDynamicSlot(binding.slotThreeCard, binding.slotThreeIcon, binding.slotThreeTitle, binding.slotThreeSubtitle, slots.getOrNull(2))
+    private fun renderDynamicSlots(slots: List<ResolvedSlot>, coldStartStatus: ColdStartStatus) {
+        bindDynamicSlot(
+            card = binding.slotOneCard,
+            iconView = binding.slotOneIcon,
+            titleView = binding.slotOneTitle,
+            subtitleView = binding.slotOneSubtitle,
+            resolvedSlot = slots.getOrNull(0),
+            coldStartStatus = coldStartStatus,
+        )
+        bindDynamicSlot(
+            card = binding.slotTwoCard,
+            iconView = binding.slotTwoIcon,
+            titleView = binding.slotTwoTitle,
+            subtitleView = binding.slotTwoSubtitle,
+            resolvedSlot = slots.getOrNull(1),
+            coldStartStatus = coldStartStatus,
+        )
+        bindDynamicSlot(
+            card = binding.slotThreeCard,
+            iconView = binding.slotThreeIcon,
+            titleView = binding.slotThreeTitle,
+            subtitleView = binding.slotThreeSubtitle,
+            resolvedSlot = slots.getOrNull(2),
+            coldStartStatus = coldStartStatus,
+        )
     }
 
     /**
-     * 単一の動的スロットへ候補アプリまたはフォールバック導線を描画します。
+     * 1 つの動的スロットを描画し、学習中の案内も重ねて表示します。
      */
     private fun bindDynamicSlot(
         card: MaterialCardView,
@@ -103,27 +160,36 @@ class MainActivity : AppCompatActivity() {
         titleView: TextView,
         subtitleView: TextView,
         resolvedSlot: ResolvedSlot?,
+        coldStartStatus: ColdStartStatus,
     ) {
-        val accent = ContextCompat.getColor(this, R.color.panel_surface)
-        card.setCardBackgroundColor(accent)
+        card.setCardBackgroundColor(ContextCompat.getColor(this, R.color.panel_surface))
+        card.alpha = if (coldStartStatus.isLearning) 0.96f else 1.0f
 
-        // 候補が見つからない場合でも、アプリライブラリへの導線は維持します。
+        // 候補が解決できない場合でも、全アプリ一覧へ逃がして操作を止めないようにします。
         if (resolvedSlot?.app == null) {
             iconView.setImageDrawable(ContextCompat.getDrawable(this, android.R.drawable.ic_menu_search))
             titleView.text = getString(R.string.slot_empty_title)
             subtitleView.text = getString(R.string.slot_empty_subtitle)
-            card.setOnClickListener { showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp) }
+            card.setOnClickListener {
+                showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
+            }
             return
         }
 
         iconView.setImageDrawable(resolvedSlot.app.icon)
+        titleView.text = "${resolvedSlot.spec.title} / ${resolvedSlot.app.label}"
+
         val slotKindLabel = if (resolvedSlot.spec.kind == SlotKind.DISCOVERY) {
             getString(R.string.slot_kind_discovery)
         } else {
             getString(R.string.slot_kind_prediction)
         }
-        titleView.text = "${resolvedSlot.spec.title} / ${resolvedSlot.app.label}"
-        subtitleView.text = "$slotKindLabel / ${resolvedSlot.actionHint}"
+        val learningLabel = if (coldStartStatus.isLearning) {
+            getString(R.string.learning_badge_prefix)
+        } else {
+            ""
+        }
+        subtitleView.text = "$learningLabel$slotKindLabel / ${resolvedSlot.actionHint}"
         card.setOnClickListener { launchApp(resolvedSlot.app) }
     }
 
@@ -155,7 +221,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 単一のアンカースロットに固定済みアプリまたは初期候補を割り当てます。
+     * 1 つのアンカースロットへ固定アプリまたは初期候補を表示します。
      */
     private fun bindAnchorSlot(
         spec: AnchorSlotSpec,
@@ -170,7 +236,7 @@ class MainActivity : AppCompatActivity() {
 
         iconView.setImageDrawable(resolvedApp?.icon ?: defaultAnchorIcon())
         titleView.text = spec.title
-        subtitleView.text = resolvedApp?.label ?: "長押しで固定"
+        subtitleView.text = resolvedApp?.label ?: getString(R.string.anchor_unset)
 
         card.setOnClickListener {
             if (resolvedApp != null) {
@@ -179,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                 showAnchorPicker(spec, isPinned = false)
             }
         }
-        // 長押し時だけ固定変更 UI を開くことで、通常タップの起動動線を崩さないようにします。
+        // 長押し時だけ固定先の変更ダイアログを開き、通常タップの起動導線を壊さないようにします。
         card.setOnLongClickListener {
             showAnchorPicker(spec, isPinned = pinnedPackage != null)
             true
@@ -211,7 +277,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 一般アプリ一覧ダイアログを表示します。
+     * 初期プロファイル選択ダイアログを表示します。
+     */
+    private fun showColdStartProfileDialog() {
+        val profiles = ColdStartProfile.entries.toTypedArray()
+        val items = profiles.map { profile ->
+            "${profile.displayName} / ${buildProfileDescription(profile)}"
+        }.toTypedArray()
+
+        val builder = AlertDialog.Builder(this)
+            .setTitle(R.string.cold_start_profile_title)
+            .setItems(items) { _, which ->
+                coldStartPreferences.setSelectedProfile(profiles[which])
+                refreshUi()
+            }
+            .setNegativeButton(R.string.cancel, null)
+
+        // 利用統計アクセスがあると、選択した属性プリセットに既存の利用傾向も合成できます。
+        if (!usageStatsImporter.hasAccessPermission()) {
+            builder.setNeutralButton(R.string.open_usage_access_settings) { _, _ ->
+                openUsageAccessSettings()
+            }
+        }
+
+        builder.show()
+    }
+
+    /**
+     * 全アプリ一覧ダイアログを表示します。
      */
     private fun showAppPicker(title: String, onSelected: (LaunchableApp) -> Unit) {
         val adapter = AppPickerAdapter(this, launchableApps)
@@ -232,13 +325,143 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 現在のコンテキストを人が読める簡易サマリーへ変換します。
+     * 利用統計アクセス設定画面を開きます。
+     */
+    private fun openUsageAccessSettings() {
+        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+    }
+
+    /**
+     * コールドスタート向けにアプリ一覧を並べ替えます。
+     */
+    private fun rankAppsForColdStart(
+        apps: List<LaunchableApp>,
+        usageRanking: Map<String, Long>,
+    ): List<LaunchableApp> {
+        val selectedProfile = coldStartPreferences.getSelectedProfile()
+        if (usageRanking.isEmpty() && selectedProfile == null) {
+            return apps
+        }
+
+        return apps.sortedWith(
+            compareByDescending<LaunchableApp> { app ->
+                scoreForColdStart(app, usageRanking, selectedProfile)
+            }.thenBy {
+                it.label.lowercase(Locale.getDefault())
+            },
+        )
+    }
+
+    /**
+     * 利用統計と属性プリセットを合成した初期スコアを返します。
+     */
+    private fun scoreForColdStart(
+        app: LaunchableApp,
+        usageRanking: Map<String, Long>,
+        selectedProfile: ColdStartProfile?,
+    ): Long {
+        val usageScore = usageRanking[app.packageName] ?: 0L
+        val profileBoost = selectedProfile?.let { profile ->
+            val matchCount = countBoostKeywordMatches(app, profile.boostKeywords)
+            // 利用履歴が薄い端末でも、最初の 3 スロットに属性の違いが出るように大きめに加点します。
+            matchCount * 7_200_000L
+        } ?: 0L
+        return usageScore + profileBoost
+    }
+
+    /**
+     * 属性プリセットのキーワード一致数を数えます。
+     */
+    private fun countBoostKeywordMatches(app: LaunchableApp, keywords: List<String>): Long {
+        val label = app.label.lowercase(Locale.getDefault())
+        val packageName = app.packageName.lowercase(Locale.getDefault())
+        return keywords.count { keyword ->
+            val loweredKeyword = keyword.lowercase(Locale.getDefault())
+            label.contains(loweredKeyword) || packageName.contains(loweredKeyword)
+        }.toLong()
+    }
+
+    /**
+     * コールドスタート状態を説明用の表示モデルへまとめます。
+     */
+    private fun buildColdStartStatus(usageRanking: Map<String, Long>): ColdStartStatus {
+        val selectedProfile = coldStartPreferences.getSelectedProfile()
+        val isLearning = coldStartPreferences.isLearningPhase()
+        val usingUsageStats = usageRanking.isNotEmpty()
+        val remainingDays = (3L - coldStartPreferences.getElapsedDays()).coerceAtLeast(0L)
+
+        val summary = when {
+            selectedProfile == null && usingUsageStats ->
+                getString(R.string.cold_start_summary_without_profile_with_usage)
+            selectedProfile == null ->
+                getString(R.string.cold_start_summary_without_profile)
+            isLearning && usingUsageStats ->
+                getString(R.string.cold_start_summary_learning_with_usage, selectedProfile.displayName, remainingDays)
+            isLearning ->
+                getString(R.string.cold_start_summary_learning_without_usage, selectedProfile.displayName, remainingDays)
+            usingUsageStats ->
+                getString(R.string.cold_start_summary_ready_with_usage, selectedProfile.displayName)
+            else ->
+                getString(R.string.cold_start_summary_ready_without_usage, selectedProfile.displayName)
+        }
+
+        return ColdStartStatus(
+            selectedProfile = selectedProfile,
+            isLearning = isLearning,
+            usingUsageStats = usingUsageStats,
+            summary = summary,
+        )
+    }
+
+    /**
+     * ヘッダのチップ表示文言を組み立てます。
+     */
+    private fun buildProfileChipLabel(
+        profile: LauncherProfile,
+        coldStartStatus: ColdStartStatus,
+    ): String {
+        val selectedProfileLabel = coldStartStatus.selectedProfile?.displayName ?: getString(R.string.cold_start_profile_unselected)
+        return "${profile.displayName} / $selectedProfileLabel"
+    }
+
+    /**
+     * プロファイル選択ダイアログ用の補足説明を返します。
+     */
+    private fun buildProfileDescription(profile: ColdStartProfile): String {
+        return when (profile) {
+            ColdStartProfile.BUSINESS -> getString(R.string.cold_start_profile_business_description)
+            ColdStartProfile.STUDENT -> getString(R.string.cold_start_profile_student_description)
+            ColdStartProfile.ENTERTAINMENT -> getString(R.string.cold_start_profile_entertainment_description)
+        }
+    }
+
+    /**
+     * 現在のコンテキストを人が読める要約へ変換します。
      */
     private fun buildSignalSummary(snapshot: ContextSnapshot): String {
-        val chargingLabel = if (snapshot.isCharging) "充電中" else "非充電"
-        val audioLabel = if (snapshot.hasHeadphones) "イヤホン接続" else "本体スピーカー"
-        val postureLabel = if (snapshot.isLandscape) "横向き" else "縦向き"
-        return "時刻 ${snapshot.hourOfDay}:00 / $chargingLabel / $audioLabel / $postureLabel / 電池 ${snapshot.batteryPercent}%"
+        val chargingLabel = if (snapshot.isCharging) {
+            getString(R.string.signal_charging_on)
+        } else {
+            getString(R.string.signal_charging_off)
+        }
+        val audioLabel = if (snapshot.hasHeadphones) {
+            getString(R.string.signal_audio_headphones)
+        } else {
+            getString(R.string.signal_audio_speaker)
+        }
+        val postureLabel = if (snapshot.isLandscape) {
+            getString(R.string.signal_posture_landscape)
+        } else {
+            getString(R.string.signal_posture_portrait)
+        }
+        return getString(
+            R.string.signal_summary_format,
+            snapshot.hourOfDay,
+            chargingLabel,
+            audioLabel,
+            postureLabel,
+            snapshot.batteryPercent,
+        )
     }
 
     /**

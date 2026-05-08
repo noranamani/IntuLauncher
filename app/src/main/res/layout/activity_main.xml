@@ -79,6 +79,15 @@
             tools:text="Signals: charging off, headphones on, workday rhythm active" />
 
         <TextView
+            android:id="@+id/coldStartStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            tools:text="初回学習中です。利用履歴を取り込みながら候補を整えています。" />
+
+        <TextView
             android:id="@+id/specReferenceText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

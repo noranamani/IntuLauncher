@@ -81,6 +81,43 @@ data class AnchorSlotSpec(
 )
 
 /**
+ * コールドスタート時に使う属性ベースの初期プロファイルです。
+ */
+enum class ColdStartProfile(
+    /** 画面表示名です。 */
+    val displayName: String,
+    /** 初期配置で重み付けするキーワードです。 */
+    val boostKeywords: List<String>,
+) {
+    BUSINESS(
+        displayName = "ビジネス",
+        boostKeywords = listOf("slack", "teams", "calendar", "mail", "outlook", "docs", "meet"),
+    ),
+    STUDENT(
+        displayName = "学生",
+        boostKeywords = listOf("classroom", "drive", "calendar", "note", "keep", "zoom", "pdf"),
+    ),
+    ENTERTAINMENT(
+        displayName = "エンタメ重視",
+        boostKeywords = listOf("youtube", "spotify", "music", "netflix", "prime", "kindle", "camera"),
+    );
+}
+
+/**
+ * コールドスタートの学習状況をまとめた状態です。
+ */
+data class ColdStartStatus(
+    /** 選択済みの初期プロファイルです。 */
+    val selectedProfile: ColdStartProfile?,
+    /** 学習フェーズ中かどうかです。 */
+    val isLearning: Boolean,
+    /** 利用統計を使った初期配置が有効かどうかです。 */
+    val usingUsageStats: Boolean,
+    /** 状態説明文です。 */
+    val summary: String,
+)
+
+/**
  * ホーム画面全体の見た目と推薦傾向を表すプロファイルです。
  */
 enum class LauncherProfile(
