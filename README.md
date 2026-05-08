@@ -1,22 +1,31 @@
 # IntuLauncher
 
-IntuLauncher is an Android home app prototype based on the presentation in `IntuLauncher Presentation.pdf`.
+`IntuLauncher` は、`IntuLauncher Presentation.pdf` と `要件等々.md` をもとに構築している Android ホームアプリのプロトタイプです。
 
-Current prototype goals:
+## 概要
 
-- zero-setup first launch
-- three large context-aware action slots
-- three user-pinnable anchor slots
-- ambient background changes based on live device context
-- local-only recommendation logic using time, charging state, and audio output state
+- 初回起動時の複雑な設定を前提としない
+- コンテキストに応じて切り替わる 3 つの動的スロットを中心に据える
+- ユーザーが固定できる 3 つのアンカースロットを持つ
+- 時間帯、充電状態、オーディオ接続、画面向きなどを用いて表示内容を調整する
+- 推薦の一部に「発見」枠を設け、同じ提案だけに偏らないようにする
+- アプリ起動前に「次の操作」を想起させる Deep Action 風のヒントを表示する
 
-Project workflow:
+## 開発方針
 
-- local Git repository
-- Gitflow enabled with `master` and `develop`
+- ローカル Git リポジトリで管理する
+- Gitflow を前提とし、`master` と `develop` を運用の基準ブランチとする
+- 機能追加や仕様変更を行う際は、`要件等々.md` を第一の参照資料として扱う
 
-Prototype notes:
+## 現在の実装範囲
 
-- This first pass focuses on the launcher experience and interaction model.
-- The AI recommendation layer described in the presentation is represented by a deterministic context engine so the UI and launcher behavior can be validated before adding ML or cloud inference.
+- ホームアプリとして選択可能な最小構成
+- 動的 3 スロットの表示と起動
+- アンカースロットの固定と解除
+- 簡易的なコンテキスト判定
+- Discovery 枠と Deep Action 風文言の試験実装
 
+## 今後の拡張メモ
+
+- `要件等々.md` に追記された内容を基準に機能を継続追加する
+- 位置情報、カレンダー、行動履歴学習、忘却アルゴリズム、マイクロウィジェット化を段階的に導入する

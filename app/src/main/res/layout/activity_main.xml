@@ -79,6 +79,15 @@
             tools:text="Signals: charging off, headphones on, workday rhythm active" />
 
         <TextView
+            android:id="@+id/specReferenceText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/spec_reference"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+
+        <TextView
             android:id="@+id/slotSectionTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -441,4 +450,3 @@
 
     </LinearLayout>
 </ScrollView>
-

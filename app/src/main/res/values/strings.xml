@@ -1,15 +1,17 @@
 <resources>
     <string name="app_name">IntuLauncher</string>
-    <string name="default_headline">The intent-first experience.</string>
-    <string name="default_subheadline">Three adaptive launch slots surface what matters now, while your regulars stay pinned within reach.</string>
-    <string name="dynamic_slots_title">Dynamic 3-slot interface</string>
-    <string name="anchor_slots_title">Anchor slots</string>
-    <string name="anchor_hint">Long press to repin</string>
-    <string name="open_all_apps">Open app library</string>
-    <string name="app_picker_title">Choose an app</string>
-    <string name="clear_anchor">Clear anchor</string>
-    <string name="cancel">Cancel</string>
-    <string name="slot_empty_title">No suitable app found yet</string>
-    <string name="slot_empty_subtitle">Open the library and IntuLauncher will still keep the profile framing intact.</string>
+    <string name="default_headline">意図を先回りするホーム体験。</string>
+    <string name="default_subheadline">その時に必要な 3 つの導線を前面に出し、定番アプリはアンカーに固定します。</string>
+    <string name="dynamic_slots_title">動的 3 スロット</string>
+    <string name="anchor_slots_title">アンカースロット</string>
+    <string name="anchor_hint">長押しで固定変更</string>
+    <string name="open_all_apps">アプリ一覧を開く</string>
+    <string name="app_picker_title">アプリを選択</string>
+    <string name="clear_anchor">固定を解除</string>
+    <string name="cancel">キャンセル</string>
+    <string name="slot_empty_title">候補アプリがまだ見つかっていません</string>
+    <string name="slot_empty_subtitle">まずはアプリ一覧から起動できます。文脈に応じた構成は維持されます。</string>
+    <string name="spec_reference">参照仕様: 要件等々.md</string>
+    <string name="slot_kind_discovery">発見枠</string>
+    <string name="slot_kind_prediction">意図予測</string>
 </resources>
-
