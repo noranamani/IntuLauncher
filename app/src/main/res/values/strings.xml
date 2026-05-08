@@ -65,4 +65,13 @@
     <string name="benefit_days_since_drawer_unknown">まだアプリ一覧の利用履歴はありません</string>
     <string name="preview_title">数時間後のホーム変化プレビュー</string>
     <string name="preview_item_format">%1$d 時間後 / %2$s\n%3$s</string>
+    <string name="widget_trial_button">予測ウィジェット状態</string>
+    <string name="rollback_home_button">元のホームへ戻す設定</string>
+    <string name="widget_trial_title">ウィジェット先行オンボーディング</string>
+    <string name="widget_trial_description">既存ホーム上で予測導線を体験するトライアルウィジェット</string>
+    <string name="widget_trial_learning_message">ウィジェットでも本体と同じ学習ログを蓄積し、命中率に応じてフル移行を提案します。</string>
+    <string name="widget_trial_hit_rate">ウィジェット導線の採用率: %1$d%%</string>
+    <string name="widget_trial_saved_seconds">フル移行時の想定時短: %1$d 秒</string>
+    <string name="widget_trial_conversion_ready">フルランチャー移行を提案できる精度に近づいています。</string>
+    <string name="widget_trial_continue_learning">もう少し学習を続けると、移行提案の精度が安定します。</string>
 </resources>

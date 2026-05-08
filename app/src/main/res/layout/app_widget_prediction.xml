@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetRootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#101826"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/widgetProfileText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#F6F8FD"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widgetSummaryText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="#C8D1E5"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widgetSlotOneText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="#F6F8FD"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/widgetSlotTwoText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="#F6F8FD"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/widgetSlotThreeText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="#F6F8FD"
+        android:textSize="13sp" />
+</LinearLayout>

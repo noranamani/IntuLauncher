@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
     /** 導入支援と ROI 集計を管理する設定クラスです。 */
     private lateinit var onboardingSupportPreferences: OnboardingSupportPreferences
 
+    /** 予測ウィジェットの表示状態を保持するクラスです。 */
+    private lateinit var widgetTrialStateStore: WidgetTrialStateStore
+
     /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
     private lateinit var usageStatsImporter: UsageStatsImporter
 
@@ -55,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         anchorPreferences = AnchorPreferences(this)
         coldStartPreferences = ColdStartPreferences(this)
         onboardingSupportPreferences = OnboardingSupportPreferences(this)
+        widgetTrialStateStore = WidgetTrialStateStore(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
 
@@ -75,6 +79,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.previewButton.setOnClickListener {
             showHomePreviewDialog()
+        }
+        binding.widgetTrialButton.setOnClickListener {
+            showWidgetTrialDialog()
+        }
+        binding.rollbackHomeButton.setOnClickListener {
+            openHomeSettings()
         }
         binding.profileChip.setOnClickListener {
             showColdStartProfileDialog()
@@ -115,6 +125,7 @@ class MainActivity : AppCompatActivity() {
         val launcherProfile = LauncherProfile.from(snapshot)
         val coldStartStatus = buildColdStartStatus(usageRanking)
         val slots = launcherProfile.resolveSlots(rankedApps)
+        updateWidgetTrialState(launcherProfile, coldStartStatus, slots)
 
         renderProfile(launcherProfile, snapshot, coldStartStatus)
         renderDynamicSlots(slots, coldStartStatus)
@@ -479,6 +490,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * 予測ウィジェットの学習状況と移行提案を表示します。
+     */
+    private fun showWidgetTrialDialog() {
+        val report = onboardingSupportPreferences.buildBenefitReport()
+        val shouldSuggestMigration = report.predictionHitRate >= 45 || report.savedSeconds >= 60
+        val message = buildString {
+            appendLine(getString(R.string.widget_trial_learning_message))
+            appendLine()
+            appendLine(getString(R.string.widget_trial_hit_rate, report.predictionHitRate))
+            appendLine(getString(R.string.widget_trial_saved_seconds, report.savedSeconds))
+            appendLine()
+            append(
+                if (shouldSuggestMigration) {
+                    getString(R.string.widget_trial_conversion_ready)
+                } else {
+                    getString(R.string.widget_trial_continue_learning)
+                },
+            )
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.widget_trial_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /**
      * 全アプリ一覧ダイアログを表示します。
      */
     private fun showAppPicker(title: String, onSelected: (LaunchableApp) -> Unit) {
@@ -504,6 +542,13 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openUsageAccessSettings() {
         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+    }
+
+    /**
+     * ホームアプリ設定画面を開き、元のホームへ戻しやすくします。
+     */
+    private fun openHomeSettings() {
+        startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
     }
 
     /**
@@ -644,5 +689,24 @@ class MainActivity : AppCompatActivity() {
      */
     private fun defaultAnchorIcon(): Drawable? {
         return ContextCompat.getDrawable(this, android.R.drawable.star_big_off)
+    }
+
+    /**
+     * 現在のスロット状態を予測ウィジェットへ同期します。
+     */
+    private fun updateWidgetTrialState(
+        profile: LauncherProfile,
+        coldStartStatus: ColdStartStatus,
+        slots: List<ResolvedSlot>,
+    ) {
+        val slotLabels = slots.map { resolvedSlot ->
+            resolvedSlot.app?.let { "${resolvedSlot.spec.title}: ${it.label}" } ?: "${resolvedSlot.spec.title}: 準備中"
+        }
+        widgetTrialStateStore.saveState(
+            profileLabel = "${profile.displayName} / Trial",
+            summary = coldStartStatus.summary,
+            slotLabels = slotLabels,
+        )
+        IntuWidgetProvider.refreshAllWidgets(this)
     }
 }
