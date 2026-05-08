@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings.Secure
 import android.provider.Settings
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.widget.ImageView
@@ -24,6 +25,9 @@ import java.util.Locale
  * IntuLauncher のホーム画面本体です。
  */
 class MainActivity : AppCompatActivity() {
+    /** Logcat 出力に使うタグです。 */
+    private val logTag = "IntuLauncher"
+
     /** 画面要素へアクセスするための ViewBinding です。 */
     private lateinit var binding: ActivityMainBinding
 
@@ -188,6 +192,7 @@ class MainActivity : AppCompatActivity() {
      * コンテキスト、コールドスタート状態、アンカー設定をまとめて描画します。
      */
     private fun refreshUi() {
+        Log.i(logTag, "UI を再描画します。")
         launchableApps = appCatalog.loadLaunchableApps()
         onboardingSupportPreferences.recordPredictionExposure()
         val usageRanking = usageStatsImporter.loadUsageRanking()
@@ -196,6 +201,7 @@ class MainActivity : AppCompatActivity() {
         val launcherProfile = LauncherProfile.from(snapshot)
         val coldStartStatus = buildColdStartStatus(usageRanking)
         val slots = launcherProfile.resolveSlots(rankedApps)
+        Log.i(logTag, "プロファイル=${launcherProfile.displayName}, 学習中=${coldStartStatus.isLearning}, 利用統計件数=${usageRanking.size}")
         notificationInsightStore.pruneExpiredRecords()
         updateWidgetTrialState(launcherProfile, coldStartStatus, slots)
 
@@ -709,6 +715,7 @@ class MainActivity : AppCompatActivity() {
      * 背景モード選択ダイアログを表示します。
      */
     private fun showVisualModeDialog() {
+        Log.i(logTag, "背景モード選択ダイアログを開きます。")
         val items = arrayOf(
             getString(R.string.visual_mode_ambient),
             getString(R.string.visual_mode_fixed),
@@ -946,6 +953,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             VisualMode.AMBIENT
         }
+        Log.i(logTag, "背景モードを切り替えます: $nextMode")
         visualModePreferences.setVisualMode(nextMode)
         if (nextMode == VisualMode.FIXED && visualModePreferences.getFixedImageUri() == null) {
             pickFixedBackground()
