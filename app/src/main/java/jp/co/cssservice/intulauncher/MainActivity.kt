@@ -31,6 +31,9 @@ class MainActivity : AppCompatActivity() {
     /** 初回導入時のプロファイルと学習期間を管理する設定クラスです。 */
     private lateinit var coldStartPreferences: ColdStartPreferences
 
+    /** 導入支援と ROI 集計を管理する設定クラスです。 */
+    private lateinit var onboardingSupportPreferences: OnboardingSupportPreferences
+
     /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
     private lateinit var usageStatsImporter: UsageStatsImporter
 
@@ -51,13 +54,27 @@ class MainActivity : AppCompatActivity() {
         appCatalog = AppCatalog(this)
         anchorPreferences = AnchorPreferences(this)
         coldStartPreferences = ColdStartPreferences(this)
+        onboardingSupportPreferences = OnboardingSupportPreferences(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
 
         binding.openAllAppsButton.setOnClickListener {
+            onboardingSupportPreferences.recordDrawerOpened()
             showAppPicker(title = getString(R.string.app_picker_title)) { app ->
                 launchApp(app)
             }
+        }
+        binding.quickSetupButton.setOnClickListener {
+            showQuickSetupDialog()
+        }
+        binding.migrationInsightButton.setOnClickListener {
+            showMigrationInsightDialog()
+        }
+        binding.benefitDashboardButton.setOnClickListener {
+            showBenefitDashboardDialog()
+        }
+        binding.previewButton.setOnClickListener {
+            showHomePreviewDialog()
         }
         binding.profileChip.setOnClickListener {
             showColdStartProfileDialog()
@@ -91,6 +108,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun refreshUi() {
         launchableApps = appCatalog.loadLaunchableApps()
+        onboardingSupportPreferences.recordPredictionExposure()
         val usageRanking = usageStatsImporter.loadUsageRanking()
         val rankedApps = rankAppsForColdStart(launchableApps, usageRanking)
         val snapshot = signalReader.readSnapshot()
@@ -191,6 +209,10 @@ class MainActivity : AppCompatActivity() {
         }
         subtitleView.text = "$learningLabel$slotKindLabel / ${resolvedSlot.actionHint}"
         card.setOnClickListener { launchApp(resolvedSlot.app) }
+        card.setOnClickListener {
+            onboardingSupportPreferences.recordPredictionHit()
+            launchApp(resolvedSlot.app)
+        }
     }
 
     /**
@@ -240,6 +262,7 @@ class MainActivity : AppCompatActivity() {
 
         card.setOnClickListener {
             if (resolvedApp != null) {
+                onboardingSupportPreferences.recordAnchorLaunch()
                 launchApp(resolvedApp)
             } else {
                 showAnchorPicker(spec, isPinned = false)
@@ -301,6 +324,158 @@ class MainActivity : AppCompatActivity() {
         }
 
         builder.show()
+    }
+
+    /**
+     * 5 問の簡易セットアップを順番に表示します。
+     */
+    private fun showQuickSetupDialog() {
+        val answers = mutableListOf<Int>()
+        val questions = listOf(
+            SetupQuestion(
+                title = getString(R.string.setup_question_primary_goal),
+                options = listOf(
+                    getString(R.string.setup_answer_business),
+                    getString(R.string.setup_answer_student),
+                    getString(R.string.setup_answer_entertainment),
+                ),
+            ),
+            SetupQuestion(
+                title = getString(R.string.setup_question_handedness),
+                options = Handedness.entries.map { it.displayName },
+            ),
+            SetupQuestion(
+                title = getString(R.string.setup_question_density),
+                options = IconDensity.entries.map { it.displayName },
+            ),
+            SetupQuestion(
+                title = getString(R.string.setup_question_trial),
+                options = listOf(
+                    getString(R.string.setup_answer_trial_first),
+                    getString(R.string.setup_answer_full_launcher),
+                ),
+            ),
+            SetupQuestion(
+                title = getString(R.string.setup_question_confirmation),
+                options = listOf(
+                    getString(R.string.setup_answer_keep_fast),
+                    getString(R.string.setup_answer_keep_safe),
+                ),
+            ),
+        )
+        showSetupQuestionStep(questions, answers, 0)
+    }
+
+    /**
+     * セットアップの各質問を再帰的に進めます。
+     */
+    private fun showSetupQuestionStep(
+        questions: List<SetupQuestion>,
+        answers: MutableList<Int>,
+        index: Int,
+    ) {
+        if (index >= questions.size) {
+            completeQuickSetup(answers)
+            return
+        }
+        val question = questions[index]
+        AlertDialog.Builder(this)
+            .setTitle(question.title)
+            .setItems(question.options.toTypedArray()) { _, which ->
+                answers += which
+                showSetupQuestionStep(questions, answers, index + 1)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * セットアップ回答から初期設定を決定します。
+     */
+    private fun completeQuickSetup(answers: List<Int>) {
+        val profile = when (answers.getOrNull(0) ?: 0) {
+            1 -> ColdStartProfile.STUDENT
+            2 -> ColdStartProfile.ENTERTAINMENT
+            else -> ColdStartProfile.BUSINESS
+        }
+        val handedness = Handedness.entries.getOrElse(answers.getOrNull(1) ?: 0) { Handedness.RIGHT }
+        val density = IconDensity.entries.getOrElse(answers.getOrNull(2) ?: 1) { IconDensity.BALANCED }
+        val prefersTrialWidget = (answers.getOrNull(3) ?: 0) == 0
+
+        coldStartPreferences.setSelectedProfile(profile)
+        onboardingSupportPreferences.saveSetupResult(profile, handedness, density, prefersTrialWidget)
+        refreshUi()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.setup_completed_title)
+            .setMessage(
+                getString(
+                    R.string.setup_completed_message,
+                    profile.displayName,
+                    handedness.displayName,
+                    density.displayName,
+                ),
+            )
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /**
+     * 段階的移行の推奨内容を表示します。
+     */
+    private fun showMigrationInsightDialog() {
+        val insight = onboardingSupportPreferences.buildMigrationInsight()
+        val message = buildString {
+            appendLine(insight.summary)
+            appendLine()
+            appendLine(getString(R.string.migration_gravity_label, insight.gravityHint))
+            append(getString(R.string.migration_density_label, insight.iconDensityHint))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.migration_insight_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /**
+     * 時短レポートを表示します。
+     */
+    private fun showBenefitDashboardDialog() {
+        val report = onboardingSupportPreferences.buildBenefitReport()
+        val drawerSummary = report.daysSinceDrawerOpen?.let {
+            getString(R.string.benefit_days_since_drawer, it)
+        } ?: getString(R.string.benefit_days_since_drawer_unknown)
+        val message = buildString {
+            appendLine(report.summary)
+            appendLine()
+            appendLine(getString(R.string.benefit_saved_seconds, report.savedSeconds))
+            appendLine(getString(R.string.benefit_prediction_hit_rate, report.predictionHitRate))
+            append(drawerSummary)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.benefit_dashboard_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /**
+     * 数時間後のホーム変化プレビューを表示します。
+     */
+    private fun showHomePreviewDialog() {
+        val message = onboardingSupportPreferences.buildPreviewScenarios().joinToString("\n\n") { preview ->
+            getString(
+                R.string.preview_item_format,
+                preview.hoursAhead,
+                preview.profileName,
+                preview.slotSummary,
+            )
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.preview_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     /**

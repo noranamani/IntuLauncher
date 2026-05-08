@@ -97,6 +97,75 @@
             android:textSize="12sp" />
 
         <TextView
+            android:id="@+id/onboardingSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/onboarding_section_title"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/onboardingSectionSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/onboarding_section_subtitle"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/quickSetupButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/quick_setup_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/migrationInsightButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/migration_insight_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/benefitDashboardButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/benefit_dashboard_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/previewButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/preview_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+        </LinearLayout>
+
+        <TextView
             android:id="@+id/slotSectionTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
