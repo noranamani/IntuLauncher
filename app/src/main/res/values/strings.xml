@@ -85,4 +85,13 @@
     <string name="notification_center_title">通知インサイト</string>
     <string name="notification_muted_title">サイレント候補</string>
     <string name="notification_muted_none">現在サイレント候補はありません。</string>
+    <string name="technical_status_button">技術ステータス</string>
+    <string name="technical_status_title">技術基盤ステータス</string>
+    <string name="technical_engine_name">推論エンジン: %1$s</string>
+    <string name="technical_update_strategy">更新方式: %1$s</string>
+    <string name="technical_usage_access">Usage Access: %1$s</string>
+    <string name="technical_notification_access">Notification Access: %1$s</string>
+    <string name="technical_permission_enabled">有効</string>
+    <string name="technical_permission_disabled">未設定</string>
+    <string name="technical_accessibility_note">Accessibility Service は高度な自動実行が必要になった時だけ任意で有効化する前提です。</string>
 </resources>

@@ -187,6 +187,17 @@
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary"
                 app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/technicalStatusButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/technical_status_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
         </LinearLayout>
 
         <TextView

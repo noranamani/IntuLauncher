@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings.Secure
 import android.provider.Settings
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -47,8 +48,14 @@ class MainActivity : AppCompatActivity() {
     /** 通知インサイトを管理するクラスです。 */
     private lateinit var notificationInsightStore: NotificationInsightStore
 
+    /** 低消費電力の定期更新を登録するスケジューラです。 */
+    private lateinit var adaptiveUpdateScheduler: AdaptiveUpdateScheduler
+
     /** 背景自動最適化ロジックを提供するクラスです。 */
     private val ambientVisualManager = AmbientVisualManager()
+
+    /** デバイス内推論エンジンです。 */
+    private val onDeviceModelEngine: OnDeviceModelEngine = HeuristicOnDeviceModelEngine()
 
     /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
     private lateinit var usageStatsImporter: UsageStatsImporter
@@ -87,9 +94,11 @@ class MainActivity : AppCompatActivity() {
         widgetTrialStateStore = WidgetTrialStateStore(this)
         visualModePreferences = VisualModePreferences(this)
         notificationInsightStore = NotificationInsightStore(this)
+        adaptiveUpdateScheduler = AdaptiveUpdateScheduler(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
         notificationInsightStore.seedDemoIfEmpty()
+        adaptiveUpdateScheduler.ensureScheduled()
 
         val gestureDetector = GestureDetector(
             this,
@@ -144,6 +153,9 @@ class MainActivity : AppCompatActivity() {
         }
         binding.notificationAccessButton.setOnClickListener {
             openNotificationAccessSettings()
+        }
+        binding.technicalStatusButton.setOnClickListener {
+            showTechnicalStatusDialog()
         }
         binding.profileChip.setOnClickListener {
             showColdStartProfileDialog()
@@ -652,6 +664,45 @@ class MainActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton(android.R.string.ok, null)
             .show()
+    }
+
+    /**
+     * 技術基盤と権限状態のダイアログを表示します。
+     */
+    private fun showTechnicalStatusDialog() {
+        val engineStatus = onDeviceModelEngine.buildStatus()
+        val usageAccess = if (usageStatsImporter.hasAccessPermission()) {
+            getString(R.string.technical_permission_enabled)
+        } else {
+            getString(R.string.technical_permission_disabled)
+        }
+        val notificationAccess = if (hasNotificationAccess()) {
+            getString(R.string.technical_permission_enabled)
+        } else {
+            getString(R.string.technical_permission_disabled)
+        }
+        val message = buildString {
+            appendLine(getString(R.string.technical_engine_name, engineStatus.engineName))
+            appendLine(engineStatus.summary)
+            appendLine()
+            appendLine(getString(R.string.technical_update_strategy, engineStatus.updateStrategy))
+            appendLine(getString(R.string.technical_usage_access, usageAccess))
+            appendLine(getString(R.string.technical_notification_access, notificationAccess))
+            append(getString(R.string.technical_accessibility_note))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.technical_status_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /**
+     * 通知アクセスが有効かどうかを返します。
+     */
+    private fun hasNotificationAccess(): Boolean {
+        val enabledListeners = Secure.getString(contentResolver, "enabled_notification_listeners") ?: return false
+        return enabledListeners.contains(packageName)
     }
 
     /**
