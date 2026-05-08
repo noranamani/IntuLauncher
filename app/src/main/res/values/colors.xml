@@ -1,0 +1,14 @@
+<resources>
+    <color name="lime">#D9FF7F</color>
+    <color name="background_commute">#09111F</color>
+    <color name="background_focus">#111723</color>
+    <color name="background_home">#0E1714</color>
+    <color name="panel_surface">#1B2334</color>
+    <color name="anchor_surface">#151D2B</color>
+    <color name="chip_surface">#263249</color>
+    <color name="panel_stroke">#32415C</color>
+    <color name="text_primary">#F6F8FD</color>
+    <color name="text_secondary">#C8D1E5</color>
+    <color name="text_muted">#97A3BD</color>
+</resources>
+

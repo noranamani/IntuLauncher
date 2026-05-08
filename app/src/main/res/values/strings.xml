@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">IntuLauncher</string>
+    <string name="default_headline">The intent-first experience.</string>
+    <string name="default_subheadline">Three adaptive launch slots surface what matters now, while your regulars stay pinned within reach.</string>
+    <string name="dynamic_slots_title">Dynamic 3-slot interface</string>
+    <string name="anchor_slots_title">Anchor slots</string>
+    <string name="anchor_hint">Long press to repin</string>
+    <string name="open_all_apps">Open app library</string>
+    <string name="app_picker_title">Choose an app</string>
+    <string name="clear_anchor">Clear anchor</string>
+    <string name="cancel">Cancel</string>
+    <string name="slot_empty_title">No suitable app found yet</string>
+    <string name="slot_empty_subtitle">Open the library and IntuLauncher will still keep the profile framing intact.</string>
+</resources>
+
