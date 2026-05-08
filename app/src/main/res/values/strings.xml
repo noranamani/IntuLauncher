@@ -74,6 +74,13 @@
     <string name="widget_trial_saved_seconds">フル移行時の想定時短: %1$d 秒</string>
     <string name="widget_trial_conversion_ready">フルランチャー移行を提案できる精度に近づいています。</string>
     <string name="widget_trial_continue_learning">もう少し学習を続けると、移行提案の精度が安定します。</string>
+    <string name="widget_host_section_title">ホーム配置ウィジェット</string>
+    <string name="widget_host_initializing">ホームウィジェットを初期化しています。</string>
+    <string name="widget_host_requires_home">IntuLauncher をホームアプリに設定すると、ここへ試行ウィジェットを自動配置します。</string>
+    <string name="widget_host_bound">試行ウィジェットをホームへ配置しました。</string>
+    <string name="widget_host_bind_failed">ホームウィジェットの自動配置に失敗しました。ホーム設定後に再度開いてください。</string>
+    <string name="widget_host_active">ホームウィジェットを表示中です。</string>
+    <string name="widget_host_fallback">システム配置が制限されたため、ホーム内プレビューとして自動配置しました。</string>
     <string name="visual_mode_title">背景モードを選択</string>
     <string name="visual_mode_ambient">AI Ambient Mode</string>
     <string name="visual_mode_fixed">Fixed Personal Mode</string>

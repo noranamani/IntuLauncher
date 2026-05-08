@@ -35,12 +35,19 @@
 - `01_ビルド.bat`
   デバッグ APK をビルドします。
 - `02_インストール.bat`
-  ビルド後に端末へ再インストールします。
+  Pixel 9 相当エミュレータを起動し、ビルド後に APK を再インストールします。
 - `03_起動.bat`
-  インストール後に `MainActivity` を起動します。
+  エミュレータ起動、インストール、`HOME` 設定、ホーム起動まで行います。
 - `04_Logcat_IntuLauncher.bat`
-  `IntuLauncher` タグと関連ログを監視します。
+  エミュレータを対象に `IntuLauncher` タグと関連ログを監視します。
 - `05_一括デバッグ.bat`
-  Logcat を開いたうえで、ビルド、インストール、起動までまとめて行います。
+  Logcat を開いたうえで、エミュレータ起動、ビルド、インストール、ホーム起動までまとめて行います。
 
 `adb.exe` は `ANDROID_HOME`、`ANDROID_SDK_ROOT`、`%LOCALAPPDATA%\Android\Sdk` の順に探索します。
+`emulator.exe` も同じ順で探索します。
+既定の AVD は `EdgeGestureN_Pixel9_API35` です。必要なら環境変数 `INTULAUNCHER_AVD` で変更できます。
+
+## エミュレータ向け補足
+
+- `03_起動.bat` と `05_一括デバッグ.bat` は、`IntuLauncher` をデフォルト HOME に設定します。
+- Android の制限でシステムウィジェットの自動バインドが拒否された場合は、ホーム内に同じ見た目のウィジェットプレビューを自動配置します。

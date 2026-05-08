@@ -134,6 +134,33 @@
             android:textSize="12sp" />
 
         <TextView
+            android:id="@+id/widgetHostSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="@string/widget_host_section_title"
+            android:textColor="@color/text_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widgetHostStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/widget_host_initializing"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:id="@+id/widgetHostContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@color/anchor_surface"
+            android:padding="8dp" />
+
+        <TextView
             android:id="@+id/notificationSectionTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -1,5 +1,9 @@
 package jp.co.cssservice.intulauncher
 
+import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -9,6 +13,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,6 +51,9 @@ class MainActivity : AppCompatActivity() {
     /** 予測ウィジェットの表示状態を保持するクラスです。 */
     private lateinit var widgetTrialStateStore: WidgetTrialStateStore
 
+    /** ホスト済みウィジェット ID を管理する設定クラスです。 */
+    private lateinit var hostedWidgetPreferences: HostedWidgetPreferences
+
     /** 背景モード設定を保持するクラスです。 */
     private lateinit var visualModePreferences: VisualModePreferences
 
@@ -60,6 +68,12 @@ class MainActivity : AppCompatActivity() {
 
     /** デバイス内推論エンジンです。 */
     private val onDeviceModelEngine: OnDeviceModelEngine = HeuristicOnDeviceModelEngine()
+
+    /** ホーム上でウィジェットを保持するためのホストです。 */
+    private lateinit var appWidgetHost: AppWidgetHost
+
+    /** ウィジェット操作用のマネージャです。 */
+    private lateinit var appWidgetManager: AppWidgetManager
 
     /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
     private lateinit var usageStatsImporter: UsageStatsImporter
@@ -96,11 +110,14 @@ class MainActivity : AppCompatActivity() {
         coldStartPreferences = ColdStartPreferences(this)
         onboardingSupportPreferences = OnboardingSupportPreferences(this)
         widgetTrialStateStore = WidgetTrialStateStore(this)
+        hostedWidgetPreferences = HostedWidgetPreferences(this)
         visualModePreferences = VisualModePreferences(this)
         notificationInsightStore = NotificationInsightStore(this)
         adaptiveUpdateScheduler = AdaptiveUpdateScheduler(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
+        appWidgetManager = AppWidgetManager.getInstance(this)
+        appWidgetHost = AppWidgetHost(this, APP_WIDGET_HOST_ID)
         notificationInsightStore.seedDemoIfEmpty()
         adaptiveUpdateScheduler.ensureScheduled()
 
@@ -178,6 +195,9 @@ class MainActivity : AppCompatActivity() {
                 showColdStartProfileDialog()
             }
         }
+        binding.root.post {
+            ensureHostedTrialWidget()
+        }
     }
 
     /**
@@ -185,7 +205,16 @@ class MainActivity : AppCompatActivity() {
      */
     override fun onResume() {
         super.onResume()
+        appWidgetHost.startListening()
         refreshUi()
+    }
+
+    /**
+     * リスナーを停止してホスト負荷を抑えます。
+     */
+    override fun onPause() {
+        super.onPause()
+        appWidgetHost.stopListening()
     }
 
     /**
@@ -208,6 +237,7 @@ class MainActivity : AppCompatActivity() {
         renderProfile(launcherProfile, snapshot, coldStartStatus)
         applyVisualMode(launcherProfile, snapshot)
         renderNotificationInsight(launcherProfile)
+        renderHostedWidget()
         renderDynamicSlots(slots, coldStartStatus)
         renderAnchorSlots()
     }
@@ -906,6 +936,94 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * HOME として利用されている場合に、試行ウィジェットを自動配置します。
+     */
+    private fun ensureHostedTrialWidget() {
+        val provider = ComponentName(this, IntuWidgetProvider::class.java)
+        val existingWidgetId = hostedWidgetPreferences.getHostedWidgetId()
+        if (existingWidgetId != null && appWidgetManager.getAppWidgetInfo(existingWidgetId) != null) {
+            renderHostedWidget()
+            return
+        }
+
+        // デフォルトホーム化されていない状態では、バインド許可が通らない可能性が高いため案内だけ出します。
+        if (!isDefaultHome()) {
+            binding.widgetHostStatusText.text = getString(R.string.widget_host_requires_home)
+            return
+        }
+
+        val appWidgetId = appWidgetHost.allocateAppWidgetId()
+        val isBound = appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, provider)
+        if (isBound) {
+            hostedWidgetPreferences.setHostedWidgetId(appWidgetId)
+            binding.widgetHostStatusText.text = getString(R.string.widget_host_bound)
+            renderHostedWidget()
+            Log.i(logTag, "試行ウィジェットを自動配置しました。widgetId=$appWidgetId")
+        } else {
+            appWidgetHost.deleteAppWidgetId(appWidgetId)
+            binding.widgetHostStatusText.text = getString(R.string.widget_host_fallback)
+            renderHostedWidgetFallback()
+            Log.w(logTag, "試行ウィジェットの自動配置に失敗したため、フォールバック表示へ切り替えました。")
+        }
+    }
+
+    /**
+     * ホスト済みウィジェットをホーム上へ描画します。
+     */
+    private fun renderHostedWidget() {
+        val widgetId = hostedWidgetPreferences.getHostedWidgetId() ?: run {
+            binding.widgetHostContainer.removeAllViews()
+            return
+        }
+        val info = appWidgetManager.getAppWidgetInfo(widgetId) ?: run {
+            binding.widgetHostContainer.removeAllViews()
+            hostedWidgetPreferences.setHostedWidgetId(null)
+            return
+        }
+        val hostView: AppWidgetHostView = appWidgetHost.createView(this, widgetId, info)
+        hostView.setAppWidget(widgetId, info)
+        binding.widgetHostContainer.removeAllViews()
+        binding.widgetHostContainer.addView(
+            hostView,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        binding.widgetHostStatusText.text = getString(R.string.widget_host_active)
+    }
+
+    /**
+     * システムバインド不可時に、同一見た目のウィジェットプレビューを表示します。
+     */
+    private fun renderHostedWidgetFallback() {
+        val widgetState = widgetTrialStateStore.loadState()
+        val fallbackView = layoutInflater.inflate(R.layout.app_widget_prediction, binding.widgetHostContainer, false)
+        fallbackView.findViewById<TextView>(R.id.widgetProfileText).text = widgetState.profileLabel
+        fallbackView.findViewById<TextView>(R.id.widgetSummaryText).text = widgetState.summary
+        fallbackView.findViewById<TextView>(R.id.widgetSlotOneText).text = widgetState.slotOne
+        fallbackView.findViewById<TextView>(R.id.widgetSlotTwoText).text = widgetState.slotTwo
+        fallbackView.findViewById<TextView>(R.id.widgetSlotThreeText).text = widgetState.slotThree
+        binding.widgetHostContainer.removeAllViews()
+        binding.widgetHostContainer.addView(
+            fallbackView,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+    }
+
+    /**
+     * このアプリが現在のデフォルト HOME かどうかを返します。
+     */
+    private fun isDefaultHome(): Boolean {
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolved = packageManager.resolveActivity(homeIntent, 0) ?: return false
+        return resolved.activityInfo?.packageName == packageName
+    }
+
+    /**
      * 背景モードに応じたビジュアルを適用します。
      */
     private fun applyVisualMode(
@@ -971,5 +1089,10 @@ class MainActivity : AppCompatActivity() {
                 Drawable.createFromStream(inputStream, uri.toString())
             }
         }.getOrNull()
+    }
+
+    companion object {
+        /** ウィジェットホストに使う固定 ID です。 */
+        private const val APP_WIDGET_HOST_ID = 2048
     }
 }
