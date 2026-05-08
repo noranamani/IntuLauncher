@@ -1,14 +1,17 @@
 @echo off
 setlocal
-chcp 65001 >nul
 cd /d "%~dp0"
 
-echo [IntuLauncher] デバッグビルドを開始します。
+echo IntuLauncher: start debug build
+if exist ".\app\build" (
+    echo IntuLauncher: remove previous app\build
+    rmdir /s /q ".\app\build"
+)
 call .\gradlew.bat assembleDebug --no-daemon --console=plain
 if errorlevel 1 (
-    echo [IntuLauncher] ビルドに失敗しました。
+    echo IntuLauncher: build failed
     exit /b 1
 )
 
-echo [IntuLauncher] ビルドが完了しました。
+echo IntuLauncher: build completed
 exit /b 0
