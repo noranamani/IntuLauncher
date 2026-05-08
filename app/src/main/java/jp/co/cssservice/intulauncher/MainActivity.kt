@@ -2,10 +2,14 @@ package jp.co.cssservice.intulauncher
 
 import android.content.Intent
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -37,6 +41,12 @@ class MainActivity : AppCompatActivity() {
     /** 予測ウィジェットの表示状態を保持するクラスです。 */
     private lateinit var widgetTrialStateStore: WidgetTrialStateStore
 
+    /** 背景モード設定を保持するクラスです。 */
+    private lateinit var visualModePreferences: VisualModePreferences
+
+    /** 背景自動最適化ロジックを提供するクラスです。 */
+    private val ambientVisualManager = AmbientVisualManager()
+
     /** 既存の利用統計を読み込み、初期順位に反映するためのクラスです。 */
     private lateinit var usageStatsImporter: UsageStatsImporter
 
@@ -45,6 +55,19 @@ class MainActivity : AppCompatActivity() {
 
     /** アンカースロットやアプリ一覧ダイアログで使う全アプリ一覧です。 */
     private var launchableApps: List<LaunchableApp> = emptyList()
+
+    /** 固定背景画像の選択ランチャーです。 */
+    private val pickBackgroundLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+            visualModePreferences.setFixedImageUri(uri)
+            visualModePreferences.setVisualMode(VisualMode.FIXED)
+            refreshUi()
+        }
+    }
 
     /**
      * 初期化処理を行い、イベントハンドラを設定します。
@@ -59,8 +82,27 @@ class MainActivity : AppCompatActivity() {
         coldStartPreferences = ColdStartPreferences(this)
         onboardingSupportPreferences = OnboardingSupportPreferences(this)
         widgetTrialStateStore = WidgetTrialStateStore(this)
+        visualModePreferences = VisualModePreferences(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
+
+        val gestureDetector = GestureDetector(
+            this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    toggleVisualMode()
+                    return true
+                }
+            },
+        )
+        binding.root.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
+        }
+        binding.rootLayout.setOnLongClickListener {
+            toggleVisualMode()
+            true
+        }
 
         binding.openAllAppsButton.setOnClickListener {
             onboardingSupportPreferences.recordDrawerOpened()
@@ -85,6 +127,12 @@ class MainActivity : AppCompatActivity() {
         }
         binding.rollbackHomeButton.setOnClickListener {
             openHomeSettings()
+        }
+        binding.visualModeChip.setOnClickListener {
+            showVisualModeDialog()
+        }
+        binding.selectBackgroundButton.setOnClickListener {
+            pickFixedBackground()
         }
         binding.profileChip.setOnClickListener {
             showColdStartProfileDialog()
@@ -128,6 +176,7 @@ class MainActivity : AppCompatActivity() {
         updateWidgetTrialState(launcherProfile, coldStartStatus, slots)
 
         renderProfile(launcherProfile, snapshot, coldStartStatus)
+        applyVisualMode(launcherProfile, snapshot)
         renderDynamicSlots(slots, coldStartStatus)
         renderAnchorSlots()
     }
@@ -140,7 +189,6 @@ class MainActivity : AppCompatActivity() {
         snapshot: ContextSnapshot,
         coldStartStatus: ColdStartStatus,
     ) {
-        binding.rootLayout.setBackgroundColor(ContextCompat.getColor(this, profile.backgroundColor))
         binding.headlineText.text = profile.headline
         binding.subheadlineText.text = profile.subheadline
         binding.profileChip.text = buildProfileChipLabel(profile, coldStartStatus)
@@ -552,6 +600,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * 背景モード選択ダイアログを表示します。
+     */
+    private fun showVisualModeDialog() {
+        val items = arrayOf(
+            getString(R.string.visual_mode_ambient),
+            getString(R.string.visual_mode_fixed),
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.visual_mode_title)
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> {
+                        visualModePreferences.setVisualMode(VisualMode.AMBIENT)
+                        refreshUi()
+                    }
+
+                    else -> {
+                        visualModePreferences.setVisualMode(VisualMode.FIXED)
+                        pickFixedBackground()
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * 固定背景画像の選択を開始します。
+     */
+    private fun pickFixedBackground() {
+        pickBackgroundLauncher.launch(arrayOf("image/*"))
+    }
+
+    /**
      * コールドスタート向けにアプリ一覧を並べ替えます。
      */
     private fun rankAppsForColdStart(
@@ -708,5 +790,72 @@ class MainActivity : AppCompatActivity() {
             slotLabels = slotLabels,
         )
         IntuWidgetProvider.refreshAllWidgets(this)
+    }
+
+    /**
+     * 背景モードに応じたビジュアルを適用します。
+     */
+    private fun applyVisualMode(
+        profile: LauncherProfile,
+        snapshot: ContextSnapshot,
+    ) {
+        val notificationWeight = onboardingSupportPreferences.buildBenefitReport().predictionHitRate
+        when (visualModePreferences.getVisualMode()) {
+            VisualMode.AMBIENT -> {
+                val state = ambientVisualManager.buildAmbientState(profile, snapshot, notificationWeight)
+                binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                binding.rootLayout.background = null
+                binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                binding.visualModeChip.text = state.mode.displayName
+                binding.visualSummaryText.text = "${state.label} / ${state.description}"
+            }
+
+            VisualMode.FIXED -> {
+                val fixedUri = visualModePreferences.getFixedImageUri()
+                val state = ambientVisualManager.buildFixedState(fixedUri != null)
+                val fixedDrawable = fixedUri?.let { loadFixedBackgroundDrawable(it) }
+                if (fixedDrawable != null) {
+                    binding.rootLayout.background = fixedDrawable
+                } else {
+                    binding.rootLayout.background = null
+                    binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                }
+                binding.visualModeChip.text = state.mode.displayName
+                binding.visualSummaryText.text = "${state.label} / ${state.description}"
+                if (fixedUri == null) {
+                    binding.selectBackgroundButton.text = getString(R.string.select_background_button)
+                } else {
+                    binding.selectBackgroundButton.text = getString(R.string.change_background_button)
+                }
+            }
+        }
+    }
+
+    /**
+     * 背景モードをトグルします。
+     */
+    private fun toggleVisualMode() {
+        val nextMode = if (visualModePreferences.getVisualMode() == VisualMode.AMBIENT) {
+            VisualMode.FIXED
+        } else {
+            VisualMode.AMBIENT
+        }
+        visualModePreferences.setVisualMode(nextMode)
+        if (nextMode == VisualMode.FIXED && visualModePreferences.getFixedImageUri() == null) {
+            pickFixedBackground()
+        } else {
+            refreshUi()
+        }
+    }
+
+    /**
+     * 固定背景画像 URI から描画可能な Drawable を生成します。
+     */
+    private fun loadFixedBackgroundDrawable(uri: Uri): Drawable? {
+        return runCatching {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                Drawable.createFromStream(inputStream, uri.toString())
+            }
+        }.getOrNull()
     }
 }

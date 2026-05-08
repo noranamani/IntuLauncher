@@ -74,4 +74,9 @@
     <string name="widget_trial_saved_seconds">フル移行時の想定時短: %1$d 秒</string>
     <string name="widget_trial_conversion_ready">フルランチャー移行を提案できる精度に近づいています。</string>
     <string name="widget_trial_continue_learning">もう少し学習を続けると、移行提案の精度が安定します。</string>
+    <string name="visual_mode_title">背景モードを選択</string>
+    <string name="visual_mode_ambient">AI Ambient Mode</string>
+    <string name="visual_mode_fixed">Fixed Personal Mode</string>
+    <string name="select_background_button">固定背景を選択</string>
+    <string name="change_background_button">固定背景を変更</string>
 </resources>

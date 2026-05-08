@@ -69,6 +69,43 @@
                 tools:text="07:10" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/visualModeChip"
+                style="@style/Widget.Material3.Chip.Suggestion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                app:chipBackgroundColor="@color/chip_surface"
+                tools:text="AI Ambient" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/selectBackgroundButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/select_background_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/visualSummaryText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            tools:text="集中優先の低彩度テーマ / 時刻と文脈に合わせて自動調整" />
+
         <TextView
             android:id="@+id/signalSummaryText"
             android:layout_width="match_parent"
