@@ -44,6 +44,9 @@ class MainActivity : AppCompatActivity() {
     /** 背景モード設定を保持するクラスです。 */
     private lateinit var visualModePreferences: VisualModePreferences
 
+    /** 通知インサイトを管理するクラスです。 */
+    private lateinit var notificationInsightStore: NotificationInsightStore
+
     /** 背景自動最適化ロジックを提供するクラスです。 */
     private val ambientVisualManager = AmbientVisualManager()
 
@@ -83,8 +86,10 @@ class MainActivity : AppCompatActivity() {
         onboardingSupportPreferences = OnboardingSupportPreferences(this)
         widgetTrialStateStore = WidgetTrialStateStore(this)
         visualModePreferences = VisualModePreferences(this)
+        notificationInsightStore = NotificationInsightStore(this)
         usageStatsImporter = UsageStatsImporter(this)
         signalReader = ContextSignalReader(this)
+        notificationInsightStore.seedDemoIfEmpty()
 
         val gestureDetector = GestureDetector(
             this,
@@ -134,6 +139,12 @@ class MainActivity : AppCompatActivity() {
         binding.selectBackgroundButton.setOnClickListener {
             pickFixedBackground()
         }
+        binding.notificationSummaryButton.setOnClickListener {
+            showNotificationInsightDialog()
+        }
+        binding.notificationAccessButton.setOnClickListener {
+            openNotificationAccessSettings()
+        }
         binding.profileChip.setOnClickListener {
             showColdStartProfileDialog()
         }
@@ -173,10 +184,12 @@ class MainActivity : AppCompatActivity() {
         val launcherProfile = LauncherProfile.from(snapshot)
         val coldStartStatus = buildColdStartStatus(usageRanking)
         val slots = launcherProfile.resolveSlots(rankedApps)
+        notificationInsightStore.pruneExpiredRecords()
         updateWidgetTrialState(launcherProfile, coldStartStatus, slots)
 
         renderProfile(launcherProfile, snapshot, coldStartStatus)
         applyVisualMode(launcherProfile, snapshot)
+        renderNotificationInsight(launcherProfile)
         renderDynamicSlots(slots, coldStartStatus)
         renderAnchorSlots()
     }
@@ -582,6 +595,7 @@ class MainActivity : AppCompatActivity() {
      * 指定アプリを起動します。
      */
     private fun launchApp(app: LaunchableApp) {
+        notificationInsightStore.recordTapped(app.packageName, app.label, 3)
         startActivity(app.launchIntent)
     }
 
@@ -597,6 +611,47 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openHomeSettings() {
         startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+    }
+
+    /**
+     * 通知アクセス設定画面を開きます。
+     */
+    private fun openNotificationAccessSettings() {
+        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    }
+
+    /**
+     * 通知インサイトの表示を更新します。
+     */
+    private fun renderNotificationInsight(profile: LauncherProfile) {
+        val insight = notificationInsightStore.buildInsight(profile)
+        binding.notificationSummaryText.text = insight.summary
+        binding.notificationPromptText.text = insight.prompt
+    }
+
+    /**
+     * 通知インサイトの詳細ダイアログを表示します。
+     */
+    private fun showNotificationInsightDialog() {
+        val insight = notificationInsightStore.buildInsight(LauncherProfile.FOCUS_WORK)
+        val mutedSummary = if (insight.mutedPackages.isEmpty()) {
+            getString(R.string.notification_muted_none)
+        } else {
+            insight.mutedPackages.joinToString(separator = "\n")
+        }
+        val message = buildString {
+            appendLine(insight.summary)
+            appendLine()
+            appendLine(insight.prompt)
+            appendLine()
+            appendLine(getString(R.string.notification_muted_title))
+            append(mutedSummary)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.notification_center_title)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     /**

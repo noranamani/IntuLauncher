@@ -79,4 +79,10 @@
     <string name="visual_mode_fixed">Fixed Personal Mode</string>
     <string name="select_background_button">固定背景を選択</string>
     <string name="change_background_button">固定背景を変更</string>
+    <string name="notification_section_title">スマート通知ハンドリング</string>
+    <string name="notification_summary_button">通知インサイトを開く</string>
+    <string name="notification_access_button">通知アクセスを設定</string>
+    <string name="notification_center_title">通知インサイト</string>
+    <string name="notification_muted_title">サイレント候補</string>
+    <string name="notification_muted_none">現在サイレント候補はありません。</string>
 </resources>
