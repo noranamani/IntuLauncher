@@ -1,43 +1,63 @@
 package jp.co.cssservice.intulauncher
 
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.app.Activity
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.provider.Settings
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
 import android.view.View
-import android.widget.TextView
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import jp.co.cssservice.intulauncher.databinding.ActivitySetupWizardBinding
+import kotlin.math.abs
 
 /**
- * カードレイアウトで初期設定を進めるウィザード画面です。
+ * IntuLauncher の初期設定を、対話型セットアップとして案内する画面です。
  */
 class SetupWizardActivity : AppCompatActivity() {
-    /** 画面要素へアクセスする ViewBinding です。 */
+    /** 画面操作に使う ViewBinding です。 */
     private lateinit var binding: ActivitySetupWizardBinding
 
-    /** 導入支援設定を保持するクラスです。 */
+    /** セットアップ結果を保存する設定クラスです。 */
     private lateinit var onboardingSupportPreferences: OnboardingSupportPreferences
 
-    /** 初期プロファイルを保持するクラスです。 */
+    /** コールドスタート用の初期プロファイルを保存する設定クラスです。 */
     private lateinit var coldStartPreferences: ColdStartPreferences
 
-    /** 現在表示しているステップです。 */
-    private var currentStep = 0
+    /** 現在表示中のセットアップ段階です。 */
+    private var currentStage = SetupStage.WELCOME
 
-    /** 選択中のプロファイルです。 */
-    private var selectedProfile = ColdStartProfile.BUSINESS
+    /** スワイプ質問の現在位置です。 */
+    private var personalityIndex = 0
 
-    /** 選択中の利き手です。 */
+    /** 性格パラメータの累積値です。 */
+    private var personalityScores = PersonalityScores()
+
+    /** 既存設定から引き継ぐ利き手情報です。 */
     private var selectedHandedness = Handedness.RIGHT
 
-    /** 選択中のボタン密度です。 */
-    private var selectedDensity = IconDensity.BALANCED
+    /** 外部連携の承認状態です。 */
+    private val contextSelections = linkedMapOf(
+        ContextChannel.LOCATION to false,
+        ContextChannel.CALENDAR to false,
+        ContextChannel.HEALTH to false,
+        ContextChannel.NOTIFICATION to false,
+    )
 
-    /** ウィジェットから試すかどうかです。 */
-    private var prefersWidgetTrial = true
+    /** 背景色の遷移アニメーションです。 */
+    private var backgroundAnimator: ValueAnimator? = null
 
     /**
-     * 初期値を読み込み、ウィザードを表示します。
+     * 画面生成時にウィザード全体を初期化し、Welcome ステージから開始します。
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,318 +66,587 @@ class SetupWizardActivity : AppCompatActivity() {
 
         onboardingSupportPreferences = OnboardingSupportPreferences(this)
         coldStartPreferences = ColdStartPreferences(this)
-        loadInitialSelections()
-
-        binding.previousButton.setOnClickListener {
-            if (currentStep == 0) {
-                finish()
-            } else {
-                currentStep -= 1
-                renderStep()
-            }
-        }
-        binding.nextButton.setOnClickListener {
-            if (currentStep < LAST_STEP_INDEX) {
-                currentStep += 1
-                renderStep()
-            } else {
-                completeSetup()
-            }
-        }
-
-        renderStep()
-    }
-
-    /**
-     * 既存設定を初期選択へ反映します。
-     */
-    private fun loadInitialSelections() {
-        selectedProfile = coldStartPreferences.getSelectedProfile() ?: ColdStartProfile.BUSINESS
         selectedHandedness = onboardingSupportPreferences.getHandedness()
-        selectedDensity = onboardingSupportPreferences.getIconDensity()
-        prefersWidgetTrial = onboardingSupportPreferences.prefersTrialWidget()
+
+        // セットアップ中は戻るで即離脱せず、1 段階ずつ戻せるようにします。
+        onBackPressedDispatcher.addCallback(this) {
+            handleBackNavigation()
+        }
+
+        setupParticleAnimations()
+        setupStaticActions()
+        renderStage()
     }
 
     /**
-     * 現在ステップの表示内容を描画します。
+     * 画面を離れる際に残っているアニメーションを停止します。
      */
-    private fun renderStep() {
-        binding.stepCounterText.text = "${STEP_PROGRESS[currentStep]}%"
-        binding.stepProgressBar.max = 100
-        binding.stepProgressBar.progress = STEP_PROGRESS[currentStep]
-        binding.previousButton.text = if (currentStep == 0) {
-            getString(R.string.cancel)
-        } else {
-            getString(R.string.setup_wizard_previous)
-        }
-        binding.nextButton.text = if (currentStep == LAST_STEP_INDEX) {
-            getString(R.string.setup_wizard_finish)
-        } else {
-            getString(R.string.setup_wizard_next)
-        }
-
-        when (currentStep) {
-            0 -> renderProfileStep()
-            1 -> renderHandednessStep()
-            2 -> renderDensityStep()
-            3 -> renderWidgetStep()
-            else -> renderSummaryStep()
-        }
+    override fun onDestroy() {
+        backgroundAnimator?.cancel()
+        super.onDestroy()
     }
 
     /**
-     * プロファイル選択ステップを描画します。
+     * 固定ボタンやコンテキスト連携アイコンなどの基本操作を設定します。
      */
-    private fun renderProfileStep() {
-        renderChoiceStep(
-            title = getString(R.string.setup_wizard_profile_title),
-            body = getString(R.string.setup_wizard_profile_body),
-            choices = listOf(
-                WizardChoice(
-                    title = ColdStartProfile.BUSINESS.displayName,
-                    body = getString(R.string.cold_start_profile_business_description),
-                    selected = selectedProfile == ColdStartProfile.BUSINESS,
-                ),
-                WizardChoice(
-                    title = ColdStartProfile.STUDENT.displayName,
-                    body = getString(R.string.cold_start_profile_student_description),
-                    selected = selectedProfile == ColdStartProfile.STUDENT,
-                ),
-                WizardChoice(
-                    title = ColdStartProfile.ENTERTAINMENT.displayName,
-                    body = getString(R.string.cold_start_profile_entertainment_description),
-                    selected = selectedProfile == ColdStartProfile.ENTERTAINMENT,
-                ),
-            ),
-        ) { index ->
-            selectedProfile = when (index) {
-                1 -> ColdStartProfile.STUDENT
-                2 -> ColdStartProfile.ENTERTAINMENT
-                else -> ColdStartProfile.BUSINESS
-            }
-            renderStep()
+    private fun setupStaticActions() {
+        binding.welcomeStartButton.setOnClickListener {
+            moveToStage(SetupStage.PERSONALITY)
         }
-    }
+        binding.contextContinueButton.setOnClickListener {
+            startGenerationStage()
+        }
+        binding.generationContinueButton.setOnClickListener {
+            moveToStage(SetupStage.FINAL)
+        }
+        binding.finalLaunchButton.setOnClickListener {
+            completeSetup()
+        }
 
-    /**
-     * 利き手選択ステップを描画します。
-     */
-    private fun renderHandednessStep() {
-        renderChoiceStep(
-            title = getString(R.string.setup_wizard_hand_title),
-            body = getString(R.string.setup_wizard_hand_body),
-            choices = Handedness.entries.map { handedness ->
-                WizardChoice(
-                    title = handedness.displayName,
-                    body = handednessDescription(handedness),
-                    selected = selectedHandedness == handedness,
-                )
+        bindContextCard(
+            card = binding.permissionLocationCard,
+            channel = ContextChannel.LOCATION,
+            onSelected = {
+                // 位置情報の詳細設定は後続で実装するため、現状はアプリ設定画面へ誘導します。
+                openAppDetailsSettings()
             },
-        ) { index ->
-            selectedHandedness = Handedness.entries[index]
-            renderStep()
-        }
-    }
-
-    /**
-     * ボタン密度選択ステップを描画します。
-     */
-    private fun renderDensityStep() {
-        renderChoiceStep(
-            title = getString(R.string.setup_wizard_density_title),
-            body = getString(R.string.setup_wizard_density_body),
-            choices = IconDensity.entries.map { density ->
-                WizardChoice(
-                    title = density.displayName,
-                    body = densityDescription(density),
-                    selected = selectedDensity == density,
-                )
-            },
-        ) { index ->
-            selectedDensity = IconDensity.entries[index]
-            renderStep()
-        }
-    }
-
-    /**
-     * 導入方法選択ステップを描画します。
-     */
-    private fun renderWidgetStep() {
-        renderChoiceStep(
-            title = getString(R.string.setup_wizard_widget_title),
-            body = getString(R.string.setup_wizard_widget_body),
-            choices = listOf(
-                WizardChoice(
-                    title = getString(R.string.setup_wizard_option_widget_first),
-                    body = "今のホームに 3 提案を置き、精度を見ながら育てます。",
-                    selected = prefersWidgetTrial,
-                ),
-                WizardChoice(
-                    title = getString(R.string.setup_wizard_option_full_launcher),
-                    body = "IntuLauncher をそのままホームとして使い始めます。",
-                    selected = !prefersWidgetTrial,
-                ),
-            ),
-        ) { index ->
-            prefersWidgetTrial = index == 0
-            renderStep()
-        }
-    }
-
-    /**
-     * 確認ステップを描画します。
-     */
-    private fun renderSummaryStep() {
-        renderChoiceStep(
-            title = getString(R.string.setup_wizard_summary_title),
-            body = getString(R.string.setup_wizard_summary_body),
-            choices = listOf(
-                WizardChoice(
-                    title = getString(R.string.setup_wizard_summary_profile, selectedProfile.displayName),
-                    body = profileDescription(selectedProfile),
-                    selected = true,
-                ),
-                WizardChoice(
-                    title = getString(R.string.setup_wizard_summary_hand, selectedHandedness.displayName),
-                    body = handednessDescription(selectedHandedness),
-                    selected = true,
-                ),
-                WizardChoice(
-                    title = getString(R.string.setup_wizard_summary_density, selectedDensity.displayName),
-                    body = densityDescription(selectedDensity),
-                    selected = true,
-                ),
-                WizardChoice(
-                    title = getString(
-                        R.string.setup_wizard_summary_widget,
-                        if (prefersWidgetTrial) {
-                            getString(R.string.setup_wizard_option_widget_first)
-                        } else {
-                            getString(R.string.setup_wizard_option_full_launcher)
-                        },
-                    ),
-                    body = if (prefersWidgetTrial) {
-                        "まずは今のホームに置き、負担を増やさず精度を育てます。"
-                    } else {
-                        "提案 3 枠と固定 1 枠のホームとして使い始めます。"
-                    },
-                    selected = true,
-                ),
-            ),
-            showSkipNote = false,
-            interactive = false,
-        ) { }
-    }
-
-    /**
-     * 共通のカード選択ステップを描画します。
-     */
-    private fun renderChoiceStep(
-        title: String,
-        body: String,
-        choices: List<WizardChoice>,
-        showSkipNote: Boolean = true,
-        interactive: Boolean = true,
-        onSelected: (Int) -> Unit,
-    ) {
-        binding.questionTitleText.text = title
-        binding.questionBodyText.text = body
-        binding.skipNoteText.visibility = if (showSkipNote) View.VISIBLE else View.GONE
-
-        val cards = listOf(
-            CardViews(binding.optionOneCard, binding.optionOneTitle, binding.optionOneBody),
-            CardViews(binding.optionTwoCard, binding.optionTwoTitle, binding.optionTwoBody),
-            CardViews(binding.optionThreeCard, binding.optionThreeTitle, binding.optionThreeBody),
-            CardViews(binding.optionFourCard, binding.optionFourTitle, binding.optionFourBody),
         )
+        bindContextCard(
+            card = binding.permissionCalendarCard,
+            channel = ContextChannel.CALENDAR,
+            onSelected = {
+                openCalendarApp()
+            },
+        )
+        bindContextCard(
+            card = binding.permissionHealthCard,
+            channel = ContextChannel.HEALTH,
+            onSelected = { },
+        )
+        bindContextCard(
+            card = binding.permissionNotificationCard,
+            channel = ContextChannel.NOTIFICATION,
+            onSelected = {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            },
+        )
+    }
 
-        cards.forEachIndexed { index, views ->
-            val choice = choices.getOrNull(index)
-            if (choice == null) {
-                views.card.visibility = View.GONE
-            } else {
-                views.card.visibility = View.VISIBLE
-                bindChoiceCard(views.card, views.titleView, views.bodyView, choice)
-                if (interactive) {
-                    views.card.setOnClickListener { onSelected(index) }
+    /**
+     * 現在の段階に応じて UI 全体を切り替えます。
+     */
+    private fun renderStage() {
+        val stages = SetupStage.entries
+        val progressPercent = (((stages.indexOf(currentStage) + 1).toFloat() / stages.size.toFloat()) * 100f).toInt()
+        binding.progressLabelText.text = getString(R.string.setup_stage_progress, stages.indexOf(currentStage) + 1, stages.size)
+        binding.progressBar.max = 100
+        binding.progressBar.progress = progressPercent
+
+        binding.welcomeSection.visibility = View.GONE
+        binding.personalitySection.visibility = View.GONE
+        binding.contextSection.visibility = View.GONE
+        binding.generationSection.visibility = View.GONE
+        binding.finalSection.visibility = View.GONE
+
+        when (currentStage) {
+            SetupStage.WELCOME -> renderWelcomeStage()
+            SetupStage.PERSONALITY -> renderPersonalityStage()
+            SetupStage.CONTEXT -> renderContextStage()
+            SetupStage.GENERATION -> renderGenerationStage()
+            SetupStage.FINAL -> renderFinalStage()
+        }
+    }
+
+    /**
+     * Welcome ステージを表示し、ブランド体験の導入を行います。
+     */
+    private fun renderWelcomeStage() {
+        animateBackgroundTo(
+            startColor = ContextCompat.getColor(this, R.color.background_home),
+            endColor = ContextCompat.getColor(this, R.color.background_ambient),
+        )
+        binding.stageTitleText.text = getString(R.string.setup_welcome_title)
+        binding.stageBodyText.text = getString(R.string.setup_welcome_body)
+        binding.supportHintText.text = getString(R.string.setup_welcome_hint)
+        binding.welcomeSection.visibility = View.VISIBLE
+
+        ObjectAnimator.ofFloat(binding.welcomeLogoText, View.SCALE_X, 1f, 1.05f, 1f).apply {
+            duration = 2200L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        ObjectAnimator.ofFloat(binding.welcomeLogoText, View.SCALE_Y, 1f, 1.05f, 1f).apply {
+            duration = 2200L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        ObjectAnimator.ofFloat(binding.welcomeLogoText, View.ALPHA, 0.8f, 1f, 0.8f).apply {
+            duration = 2200L
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
+
+    /**
+     * Personality Swipe ステージを表示し、スワイプ操作で性格傾向を抽出します。
+     */
+    private fun renderPersonalityStage() {
+        animateBackgroundTo(
+            startColor = ContextCompat.getColor(this, R.color.background_focus),
+            endColor = ContextCompat.getColor(this, R.color.background_commute),
+        )
+        binding.stageTitleText.text = getString(R.string.setup_personality_title)
+        binding.stageBodyText.text = getString(R.string.setup_personality_body)
+        binding.supportHintText.text = getString(R.string.setup_personality_hint)
+        binding.personalitySection.visibility = View.VISIBLE
+
+        val currentPrompt = PERSONALITY_PROMPTS[personalityIndex]
+        val nextPrompt = PERSONALITY_PROMPTS.getOrNull(personalityIndex + 1)
+
+        binding.personalityCounterText.text = getString(
+            R.string.setup_personality_counter,
+            personalityIndex + 1,
+            PERSONALITY_PROMPTS.size,
+        )
+        binding.personalityTopQuestionText.text = currentPrompt.question
+        binding.personalityTopMetaText.text = currentPrompt.categoryLabel
+        binding.personalityBottomQuestionText.text = nextPrompt?.question ?: getString(R.string.setup_personality_last_card)
+        binding.personalityBottomMetaText.text = nextPrompt?.categoryLabel ?: getString(R.string.setup_generation_ready_label)
+
+        binding.personalityTopCard.translationX = 0f
+        binding.personalityTopCard.translationY = 0f
+        binding.personalityTopCard.rotation = 0f
+        binding.personalityTopCard.alpha = 1f
+        binding.personalityBottomCard.alpha = if (nextPrompt == null) 0.3f else 0.72f
+
+        attachSwipeBehavior(binding.personalityTopCard)
+    }
+
+    /**
+     * Context Connection ステージを表示し、各文脈連携の承認状態を更新します。
+     */
+    private fun renderContextStage() {
+        animateBackgroundTo(
+            startColor = ContextCompat.getColor(this, R.color.background_ambient),
+            endColor = ContextCompat.getColor(this, R.color.background_focus),
+        )
+        binding.stageTitleText.text = getString(R.string.setup_context_title)
+        binding.stageBodyText.text = getString(R.string.setup_context_body)
+        binding.supportHintText.text = getString(R.string.setup_context_hint)
+        binding.contextSection.visibility = View.VISIBLE
+        renderContextSelectionState()
+    }
+
+    /**
+     * Visual Generation ステージを表示し、生成デモを再生します。
+     */
+    private fun renderGenerationStage() {
+        animateBackgroundTo(
+            startColor = ContextCompat.getColor(this, R.color.background_commute),
+            endColor = ContextCompat.getColor(this, R.color.background_night),
+        )
+        binding.stageTitleText.text = getString(R.string.setup_generation_title)
+        binding.stageBodyText.text = getString(R.string.setup_generation_body)
+        binding.supportHintText.text = getString(R.string.setup_generation_hint)
+        binding.generationSection.visibility = View.VISIBLE
+    }
+
+    /**
+     * Final Launch ステージを表示し、生成された結果を要約します。
+     */
+    private fun renderFinalStage() {
+        animateBackgroundTo(
+            startColor = ContextCompat.getColor(this, R.color.background_home),
+            endColor = ContextCompat.getColor(this, R.color.background_focus),
+        )
+        binding.stageTitleText.text = getString(R.string.setup_final_title)
+        binding.stageBodyText.text = getString(R.string.setup_final_body)
+        binding.supportHintText.text = getString(R.string.setup_final_hint)
+        binding.finalSection.visibility = View.VISIBLE
+
+        val derivedProfile = deriveProfile()
+        val derivedDensity = deriveIconDensity()
+        val widgetMode = if (prefersWidgetTrial()) {
+            getString(R.string.setup_wizard_option_widget_first)
+        } else {
+            getString(R.string.setup_wizard_option_full_launcher)
+        }
+        binding.finalSummaryText.text = getString(
+            R.string.setup_final_summary,
+            derivedProfile.displayName,
+            derivedDensity.displayName,
+            widgetMode,
+        )
+    }
+
+    /**
+     * スワイプ式カードへ操作を付与し、Yes / No に応じて次の質問へ進めます。
+     */
+    private fun attachSwipeBehavior(card: MaterialCardView) {
+        var downX = 0f
+        card.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.rawX - downX
+                    view.translationX = deltaX
+                    view.rotation = deltaX / 28f
+                    val positiveRatio = (deltaX / view.width.toFloat()).coerceIn(0f, 1f)
+                    val negativeRatio = ((-deltaX) / view.width.toFloat()).coerceIn(0f, 1f)
+                    binding.personalityYesLabel.alpha = 0.35f + (positiveRatio * 0.65f)
+                    binding.personalityNoLabel.alpha = 0.35f + (negativeRatio * 0.65f)
+                    true
+                }
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL -> {
+                    val deltaX = event.rawX - downX
+                    val threshold = view.width * 0.22f
+                    if (abs(deltaX) >= threshold) {
+                        val accepted = deltaX > 0f
+                        completeSwipe(accepted)
+                    } else {
+                        view.animate()
+                            .translationX(0f)
+                            .rotation(0f)
+                            .setDuration(220L)
+                            .setInterpolator(DecelerateInterpolator())
+                            .start()
+                        binding.personalityYesLabel.alpha = 0.35f
+                        binding.personalityNoLabel.alpha = 0.35f
+                    }
+                    true
+                }
+
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * カードのスワイプ完了演出を行い、回答結果を記録して次へ進みます。
+     */
+    private fun completeSwipe(accepted: Boolean) {
+        val direction = if (accepted) 1f else -1f
+        val currentPrompt = PERSONALITY_PROMPTS[personalityIndex]
+        binding.personalityTopCard.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+        updateScores(currentPrompt, accepted)
+        animateBackgroundChoice(accepted)
+        binding.personalityTopCard.animate()
+            .translationX(direction * binding.personalityTopCard.width * 1.35f)
+            .rotation(direction * 18f)
+            .alpha(0f)
+            .setDuration(260L)
+            .withEndAction {
+                personalityIndex += 1
+                binding.personalityYesLabel.alpha = 0.35f
+                binding.personalityNoLabel.alpha = 0.35f
+                if (personalityIndex >= PERSONALITY_PROMPTS.size) {
+                    moveToStage(SetupStage.CONTEXT)
                 } else {
-                    views.card.setOnClickListener(null)
+                    renderPersonalityStage()
+                }
+            }
+            .start()
+    }
+
+    /**
+     * 性格質問の回答を、後続のプロファイル推定へ使う内部スコアへ反映します。
+     */
+    private fun updateScores(prompt: PersonalityPrompt, accepted: Boolean) {
+        when (prompt.id) {
+            "music_over_news" -> {
+                if (accepted) {
+                    personalityScores.content += 2
+                    personalityScores.space += 1
+                } else {
+                    personalityScores.tool += 1
+                    personalityScores.focus += 1
+                }
+            }
+
+            "mute_after_hours" -> {
+                if (accepted) {
+                    personalityScores.space += 2
+                    personalityScores.focus += 1
+                } else {
+                    personalityScores.focus += 1
+                    personalityScores.tool += 1
+                }
+            }
+
+            "beauty_over_efficiency" -> {
+                if (accepted) {
+                    personalityScores.visualDepth += 2
+                    personalityScores.content += 1
+                } else {
+                    personalityScores.tool += 2
+                    personalityScores.focus += 1
                 }
             }
         }
     }
 
     /**
-     * 1 枚のカードへ表示内容と選択状態を反映します。
+     * スワイプ方向に応じて、背景色を暖色または寒色へ一時的に揺らして反応を返します。
      */
-    private fun bindChoiceCard(
-        card: MaterialCardView,
-        titleView: TextView,
-        bodyView: TextView,
-        choice: WizardChoice,
-    ) {
-        titleView.text = choice.title
-        bodyView.text = choice.body
-
-        val strokeColor = if (choice.selected) getColor(R.color.lime) else getColor(R.color.panel_stroke)
-        val backgroundRes = if (choice.selected) {
-            R.drawable.bg_setup_card_selected
+    private fun animateBackgroundChoice(accepted: Boolean) {
+        val choiceColor = if (accepted) {
+            ContextCompat.getColor(this, R.color.warm_amber)
         } else {
-            R.drawable.bg_setup_card
+            ContextCompat.getColor(this, R.color.accent_night)
         }
-
-        // 選択中のカードだけ発光感を強め、現在地を視覚的に伝えます。
-        card.setBackgroundResource(backgroundRes)
-        card.strokeColor = strokeColor
-        card.strokeWidth = if (choice.selected) dp(2) else dp(1)
+        val baseColor = ContextCompat.getColor(this, R.color.background_focus)
+        ValueAnimator.ofObject(ArgbEvaluator(), baseColor, choiceColor, baseColor).apply {
+            duration = 420L
+            addUpdateListener { animator ->
+                binding.rootLayout.setBackgroundColor(animator.animatedValue as Int)
+            }
+            start()
+        }
     }
 
     /**
-     * 現在の選択を保存してホームへ戻ります。
+     * 各コンテキストアイコンのタップ挙動を設定します。
+     */
+    private fun bindContextCard(
+        card: MaterialCardView,
+        channel: ContextChannel,
+        onSelected: () -> Unit,
+    ) {
+        card.setOnClickListener {
+            contextSelections[channel] = true
+            card.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            renderContextSelectionState()
+            onSelected()
+        }
+    }
+
+    /**
+     * 連携アイコンの選択状態と、全完了時の中央統合演出を更新します。
+     */
+    private fun renderContextSelectionState() {
+        updateContextCard(binding.permissionLocationCard, contextSelections[ContextChannel.LOCATION] == true)
+        updateContextCard(binding.permissionCalendarCard, contextSelections[ContextChannel.CALENDAR] == true)
+        updateContextCard(binding.permissionHealthCard, contextSelections[ContextChannel.HEALTH] == true)
+        updateContextCard(binding.permissionNotificationCard, contextSelections[ContextChannel.NOTIFICATION] == true)
+
+        val completedCount = contextSelections.values.count { it }
+        binding.contextStatusText.text = getString(R.string.setup_context_status, completedCount, contextSelections.size)
+        val allCompleted = completedCount == contextSelections.size
+        binding.contextContinueButton.visibility = if (allCompleted) View.VISIBLE else View.INVISIBLE
+        binding.contextMergeOrb.alpha = if (allCompleted) 1f else 0f
+        if (allCompleted) {
+            binding.contextMergeOrb.animate().scaleX(1f).scaleY(1f).setDuration(280L).start()
+        }
+    }
+
+    /**
+     * 連携アイコンの見た目を選択状態へ応じて更新します。
+     */
+    private fun updateContextCard(card: MaterialCardView, selected: Boolean) {
+        card.strokeWidth = if (selected) dp(2) else dp(1)
+        card.strokeColor = if (selected) {
+            ContextCompat.getColor(this, R.color.lime)
+        } else {
+            ContextCompat.getColor(this, R.color.panel_stroke)
+        }
+        card.setCardBackgroundColor(
+            if (selected) Color.parseColor("#223E6E5C") else Color.parseColor("#261E2D42"),
+        )
+    }
+
+    /**
+     * 生成デモを開始し、プレビュー要素を順番に描画していきます。
+     */
+    private fun startGenerationStage() {
+        moveToStage(SetupStage.GENERATION)
+        binding.generationProgressBar.max = 100
+        binding.generationProgressBar.progress = 8
+        binding.generationStatusText.text = getString(R.string.setup_generation_status_start)
+        listOf(
+            binding.generationSlotOne,
+            binding.generationSlotTwo,
+            binding.generationSlotThree,
+            binding.generationAnchorSlot,
+        ).forEach { preview ->
+            preview.alpha = 0f
+            preview.scaleX = 0.92f
+            preview.scaleY = 0.92f
+        }
+        binding.generationContinueButton.visibility = View.INVISIBLE
+
+        val steps = listOf(
+            18 to binding.generationSlotOne,
+            42 to binding.generationSlotTwo,
+            66 to binding.generationSlotThree,
+            92 to binding.generationAnchorSlot,
+        )
+        steps.forEachIndexed { index, (progress, view) ->
+            binding.root.postDelayed({
+                binding.generationProgressBar.progress = progress
+                binding.generationStatusText.text = getString(
+                    R.string.setup_generation_status_step,
+                    index + 1,
+                    steps.size,
+                )
+                view.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(260L)
+                    .setInterpolator(DecelerateInterpolator())
+                    .start()
+                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            }, 420L * (index + 1))
+        }
+        binding.root.postDelayed({
+            binding.generationProgressBar.progress = 100
+            binding.generationStatusText.text = getString(R.string.setup_generation_status_done)
+            binding.generationContinueButton.visibility = View.VISIBLE
+            binding.generationContinueButton.animate().alpha(1f).setDuration(220L).start()
+            binding.generationContinueButton.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        }, 2200L)
+    }
+
+    /**
+     * セットアップ結果を保存し、ホーム画面へ戻します。
      */
     private fun completeSetup() {
-        coldStartPreferences.setSelectedProfile(selectedProfile)
+        val derivedProfile = deriveProfile()
+        coldStartPreferences.setSelectedProfile(derivedProfile)
         onboardingSupportPreferences.saveSetupResult(
-            profile = selectedProfile,
+            profile = derivedProfile,
             handedness = selectedHandedness,
-            iconDensity = selectedDensity,
-            prefersTrialWidget = prefersWidgetTrial,
+            iconDensity = deriveIconDensity(),
+            prefersTrialWidget = prefersWidgetTrial(),
         )
         setResult(Activity.RESULT_OK)
         finish()
     }
 
     /**
-     * プロファイル説明を返します。
+     * 現在の性格スコアから初期プロファイルを推定します。
      */
-    private fun profileDescription(profile: ColdStartProfile): String {
-        return when (profile) {
-            ColdStartProfile.BUSINESS -> getString(R.string.cold_start_profile_business_description)
-            ColdStartProfile.STUDENT -> getString(R.string.cold_start_profile_student_description)
-            ColdStartProfile.ENTERTAINMENT -> getString(R.string.cold_start_profile_entertainment_description)
+    private fun deriveProfile(): ColdStartProfile {
+        return when {
+            personalityScores.tool >= 4 -> ColdStartProfile.BUSINESS
+            personalityScores.content >= 3 -> ColdStartProfile.ENTERTAINMENT
+            else -> ColdStartProfile.STUDENT
         }
     }
 
     /**
-     * 利き手ごとの説明を返します。
+     * 現在の性格スコアからアイコン密度を推定します。
      */
-    private fun handednessDescription(handedness: Handedness): String {
-        return when (handedness) {
-            Handedness.RIGHT -> "右手で届きやすい下部導線を優先します。"
-            Handedness.LEFT -> "左手で届きやすい下部導線を優先します。"
-            Handedness.BOTH -> "左右どちらでも押しやすい中央バランスを優先します。"
+    private fun deriveIconDensity(): IconDensity {
+        return when {
+            personalityScores.visualDepth >= 2 || personalityScores.space >= 3 -> IconDensity.RELAXED
+            personalityScores.focus >= 3 -> IconDensity.COMPACT
+            else -> IconDensity.BALANCED
         }
     }
 
     /**
-     * ボタン密度ごとの説明を返します。
+     * ウィジェット先行体験にするかどうかを性格傾向から推定します。
      */
-    private fun densityDescription(density: IconDensity): String {
-        return when (density) {
-            IconDensity.COMPACT -> "情報量を残しつつ、提案を見比べやすくします。"
-            IconDensity.BALANCED -> "見やすさと押しやすさのバランスを取ります。"
-            IconDensity.RELAXED -> "移動中でも押しやすい大きめボタンを優先します。"
+    private fun prefersWidgetTrial(): Boolean {
+        return personalityScores.space >= personalityScores.focus
+    }
+
+    /**
+     * Welcome 背景用の粒子をゆっくり循環させます。
+     */
+    private fun setupParticleAnimations() {
+        val particles = listOf(
+            binding.particleOne,
+            binding.particleTwo,
+            binding.particleThree,
+            binding.particleFour,
+            binding.particleFive,
+            binding.particleSix,
+        )
+        particles.forEachIndexed { index, particle ->
+            ObjectAnimator.ofFloat(particle, View.TRANSLATION_Y, 0f, -140f, 0f).apply {
+                duration = 3600L + (index * 260L)
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = AccelerateDecelerateInterpolator()
+                start()
+            }
+            ObjectAnimator.ofFloat(particle, View.ALPHA, 0.1f, 0.55f, 0.1f).apply {
+                duration = 3200L + (index * 200L)
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = AccelerateDecelerateInterpolator()
+                start()
+            }
         }
+    }
+
+    /**
+     * 画面全体の背景色を現在ステージに合わせて滑らかに遷移させます。
+     */
+    private fun animateBackgroundTo(startColor: Int, endColor: Int) {
+        backgroundAnimator?.cancel()
+        backgroundAnimator = ValueAnimator.ofObject(ArgbEvaluator(), startColor, endColor).apply {
+            duration = 900L
+            addUpdateListener { animator ->
+                binding.rootLayout.setBackgroundColor(animator.animatedValue as Int)
+            }
+            start()
+        }
+    }
+
+    /**
+     * Android のアプリ詳細設定画面を開きます。
+     */
+    private fun openAppDetailsSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+        }
+        startActivity(intent)
+    }
+
+    /**
+     * カレンダー連携の導線として、カレンダーアプリ起動を試みます。
+     */
+    private fun openCalendarApp() {
+        val intent = packageManager.getLaunchIntentForPackage("com.google.android.calendar")
+        if (intent != null) {
+            startActivity(intent)
+        }
+    }
+
+    /**
+     * 戻る操作時に現在の段階に応じた遷移を行います。
+     */
+    private fun handleBackNavigation() {
+        currentStage = when (currentStage) {
+            SetupStage.WELCOME -> {
+                finish()
+                return
+            }
+
+            SetupStage.PERSONALITY -> SetupStage.WELCOME
+            SetupStage.CONTEXT -> SetupStage.PERSONALITY
+            SetupStage.GENERATION -> SetupStage.CONTEXT
+            SetupStage.FINAL -> SetupStage.GENERATION
+        }
+        renderStage()
+    }
+
+    /**
+     * 指定された段階へ移動し、対応する UI を描画します。
+     */
+    private fun moveToStage(stage: SetupStage) {
+        currentStage = stage
+        renderStage()
     }
 
     /**
@@ -368,34 +657,72 @@ class SetupWizardActivity : AppCompatActivity() {
     }
 
     companion object {
-        /** 最終ステップ番号です。 */
-        private const val LAST_STEP_INDEX = 4
-
-        /** ステップごとの進捗率です。 */
-        private val STEP_PROGRESS = listOf(15, 35, 55, 75, 100)
+        /** スワイプ式で表示する質問一覧です。 */
+        private val PERSONALITY_PROMPTS = listOf(
+            PersonalityPrompt(
+                id = "music_over_news",
+                categoryLabel = "Tool vs Content",
+                question = "朝のニュースより、音楽を優先する？",
+            ),
+            PersonalityPrompt(
+                id = "mute_after_hours",
+                categoryLabel = "Focus vs Space",
+                question = "仕事の通知は、定時を過ぎたら一切見たくない？",
+            ),
+            PersonalityPrompt(
+                id = "beauty_over_efficiency",
+                categoryLabel = "Visual Depth",
+                question = "効率よりも、画面の美しさを重視する？",
+            ),
+        )
     }
 }
 
 /**
- * カード表示に使う View 群です。
+ * セットアップのステージを表す列挙です。
  */
-private data class CardViews(
-    /** カード本体です。 */
-    val card: MaterialCardView,
-    /** タイトル表示です。 */
-    val titleView: TextView,
-    /** 説明表示です。 */
-    val bodyView: TextView,
+private enum class SetupStage {
+    WELCOME,
+    PERSONALITY,
+    CONTEXT,
+    GENERATION,
+    FINAL,
+}
+
+/**
+ * スワイプ質問 1 件分の定義です。
+ */
+private data class PersonalityPrompt(
+    /** 質問の識別子です。 */
+    val id: String,
+    /** 質問のカテゴリ表示です。 */
+    val categoryLabel: String,
+    /** ユーザーへ見せる質問本文です。 */
+    val question: String,
 )
 
 /**
- * ウィザードの 1 選択肢を表すモデルです。
+ * 性格推定に使う内部スコアです。
  */
-private data class WizardChoice(
-    /** カード見出しです。 */
-    val title: String,
-    /** 補足説明です。 */
-    val body: String,
-    /** 現在選択中かどうかです。 */
-    val selected: Boolean,
+private data class PersonalityScores(
+    /** 集中寄りの強さです。 */
+    var focus: Int = 0,
+    /** 余白や安定寄りの強さです。 */
+    var space: Int = 0,
+    /** ツール志向の強さです。 */
+    var tool: Int = 0,
+    /** コンテンツ志向の強さです。 */
+    var content: Int = 0,
+    /** 視覚演出の深さへの好みです。 */
+    var visualDepth: Int = 0,
 )
+
+/**
+ * 文脈連携の種類を表します。
+ */
+private enum class ContextChannel {
+    LOCATION,
+    CALENDAR,
+    HEALTH,
+    NOTIFICATION,
+}
