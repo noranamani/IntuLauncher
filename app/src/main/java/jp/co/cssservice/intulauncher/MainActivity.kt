@@ -214,6 +214,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * HOME 再起動時は既存インスタンスを再利用し、文脈だけ更新します。
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        refreshUi()
+    }
+
+    /**
      * 画面復帰時に最新のコンテキストと学習状態で再描画します。
      */
     override fun onResume() {

@@ -115,14 +115,13 @@ function Set-HomeAndLaunch {
         [string]$AdbPath,
         [string]$Serial
     )
+    Write-Step "force-stop previous launcher instance"
+    & $AdbPath -s $Serial shell am force-stop $AppPackage
     Write-Step "set default home activity"
     & $AdbPath -s $Serial shell cmd package set-home-activity --user 0 $HomeActivity
     if ($LASTEXITCODE -ne 0) { throw "Failed to set default home activity." }
     Write-Step "press home"
     & $AdbPath -s $Serial shell input keyevent KEYCODE_HOME | Out-Null
-    Write-Step "start home"
-    & $AdbPath -s $Serial shell am start -a android.intent.action.MAIN -c android.intent.category.HOME
-    if ($LASTEXITCODE -ne 0) { throw "Failed to start home activity." }
     Start-Sleep -Seconds 5
     Write-Step "home launched and widget setup window elapsed"
 }
