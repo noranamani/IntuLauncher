@@ -21,6 +21,14 @@
         android:alpha="0"
         android:background="@color/scrim_dim" />
 
+    <ImageView
+        android:id="@+id/fixedBackgroundImageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/rootLayout"
         android:layout_width="match_parent"
@@ -56,18 +64,18 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotOneCard"
                     android:layout_width="0dp"
-                    android:layout_height="156dp"
+                    android:layout_height="132dp"
                     android:layout_marginEnd="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="28dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot"
-                        android:gravity="bottom"
+                        android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
 
@@ -75,6 +83,7 @@
                         android:id="@+id/slotOneIcon"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
+                        android:layout_gravity="center_horizontal"
                         android:contentDescription="@null"
                         tools:src="@android:drawable/sym_def_app_icon" />
 
@@ -82,7 +91,8 @@
                         android:id="@+id/slotOneTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
                         android:maxLines="2"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp"
@@ -93,7 +103,8 @@
                         android:id="@+id/slotOneSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_gravity="center_horizontal"
                         android:background="@drawable/bg_slot_hint_chip"
                         android:ellipsize="end"
                         android:maxLines="2"
@@ -111,19 +122,19 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotTwoCard"
                     android:layout_width="0dp"
-                    android:layout_height="156dp"
+                    android:layout_height="132dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="28dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot"
-                        android:gravity="bottom"
+                        android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
 
@@ -131,6 +142,7 @@
                         android:id="@+id/slotTwoIcon"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
+                        android:layout_gravity="center_horizontal"
                         android:contentDescription="@null"
                         tools:src="@android:drawable/sym_def_app_icon" />
 
@@ -138,7 +150,8 @@
                         android:id="@+id/slotTwoTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
                         android:maxLines="2"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp"
@@ -149,7 +162,8 @@
                         android:id="@+id/slotTwoSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_gravity="center_horizontal"
                         android:background="@drawable/bg_slot_hint_chip"
                         android:ellipsize="end"
                         android:maxLines="2"
@@ -167,18 +181,18 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotThreeCard"
                     android:layout_width="0dp"
-                    android:layout_height="156dp"
+                    android:layout_height="132dp"
                     android:layout_marginStart="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="28dp"
+                    app:cardCornerRadius="24dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot_discovery"
-                        android:gravity="bottom"
+                        android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
 
@@ -186,6 +200,7 @@
                         android:id="@+id/slotThreeIcon"
                         android:layout_width="44dp"
                         android:layout_height="44dp"
+                        android:layout_gravity="center_horizontal"
                         android:contentDescription="@null"
                         tools:src="@android:drawable/sym_def_app_icon" />
 
@@ -193,7 +208,8 @@
                         android:id="@+id/slotThreeTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center"
                         android:maxLines="2"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp"
@@ -204,7 +220,8 @@
                         android:id="@+id/slotThreeSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_gravity="center_horizontal"
                         android:background="@drawable/bg_slot_hint_chip"
                         android:ellipsize="end"
                         android:maxLines="2"

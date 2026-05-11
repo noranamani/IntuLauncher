@@ -1067,8 +1067,8 @@ class MainActivity : AppCompatActivity() {
             VisualMode.AMBIENT -> {
                 val state = ambientVisualManager.buildAmbientState(profile, snapshot, notificationWeight)
                 animateBackgroundTo(state.backgroundColor)
-                binding.rootLayout.background = null
-                binding.rootLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                binding.fixedBackgroundImageView.setImageDrawable(null)
+                binding.fixedBackgroundImageView.visibility = View.GONE
                 binding.visualModeChip.text = state.mode.displayName
                 binding.visualSummaryText.text = "${state.label} / ${state.description}"
                 binding.ambientStatusText.visibility = View.VISIBLE
@@ -1085,11 +1085,12 @@ class MainActivity : AppCompatActivity() {
                 val fixedDrawable = fixedUri?.let { loadFixedBackgroundDrawable(it) }
                 if (fixedDrawable != null) {
                     animateBackgroundTo(ContextCompat.getColor(this, R.color.background_focus))
-                    binding.rootLayout.background = fixedDrawable
+                    binding.fixedBackgroundImageView.setImageDrawable(fixedDrawable)
+                    binding.fixedBackgroundImageView.visibility = View.VISIBLE
                 } else {
-                    binding.rootLayout.background = null
+                    binding.fixedBackgroundImageView.setImageDrawable(null)
+                    binding.fixedBackgroundImageView.visibility = View.GONE
                     animateBackgroundTo(state.backgroundColor)
-                    binding.rootLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
                 binding.visualModeChip.text = state.mode.displayName
                 binding.visualSummaryText.text = "${state.label} / ${state.description}"
@@ -1114,17 +1115,17 @@ class MainActivity : AppCompatActivity() {
         val isMoveMode = profile == LauncherProfile.MORNING_COMMUTE
         val isNightMode = snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4
         val slotHeight = when {
-            isMoveMode -> 264
-            isNightMode -> 156
-            else -> 168
+            isMoveMode -> 188
+            isNightMode -> 132
+            else -> 136
         }
-        val anchorHeight = if (isMoveMode) 148 else 112
+        val anchorHeight = if (isMoveMode) 108 else 92
 
         listOf(binding.slotOneCard, binding.slotTwoCard, binding.slotThreeCard).forEach { card ->
             val params = card.layoutParams
             params.height = dp(slotHeight)
             card.layoutParams = params
-            card.radius = dp(if (isMoveMode) 30 else 28).toFloat()
+            card.radius = dp(if (isMoveMode) 28 else 24).toFloat()
             card.animate()
                 .scaleX(if (isMoveMode) 1.02f else 1.0f)
                 .scaleY(if (isMoveMode) 1.02f else 1.0f)
