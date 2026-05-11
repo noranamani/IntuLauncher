@@ -283,6 +283,7 @@ class MainActivity : AppCompatActivity() {
         bindDynamicSlot(
             slotIndex = 0,
             card = binding.slotOneCard,
+            tapTarget = binding.slotOneContent,
             iconView = binding.slotOneIcon,
             titleView = binding.slotOneTitle,
             subtitleView = binding.slotOneSubtitle,
@@ -292,6 +293,7 @@ class MainActivity : AppCompatActivity() {
         bindDynamicSlot(
             slotIndex = 1,
             card = binding.slotTwoCard,
+            tapTarget = binding.slotTwoContent,
             iconView = binding.slotTwoIcon,
             titleView = binding.slotTwoTitle,
             subtitleView = binding.slotTwoSubtitle,
@@ -301,6 +303,7 @@ class MainActivity : AppCompatActivity() {
         bindDynamicSlot(
             slotIndex = 2,
             card = binding.slotThreeCard,
+            tapTarget = binding.slotThreeContent,
             iconView = binding.slotThreeIcon,
             titleView = binding.slotThreeTitle,
             subtitleView = binding.slotThreeSubtitle,
@@ -315,6 +318,7 @@ class MainActivity : AppCompatActivity() {
     private fun bindDynamicSlot(
         slotIndex: Int,
         card: MaterialCardView,
+        tapTarget: View,
         iconView: ImageView,
         titleView: TextView,
         subtitleView: TextView,
@@ -328,7 +332,7 @@ class MainActivity : AppCompatActivity() {
             iconView.setImageDrawable(ContextCompat.getDrawable(this, android.R.drawable.ic_menu_search))
             titleView.text = getString(R.string.slot_empty_title_short)
             subtitleView.text = getString(R.string.slot_empty_subtitle_short)
-            card.setOnClickListener {
+            tapTarget.setOnClickListener {
                 showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
             }
             animateSlotIfNeeded(card, slotIndex, null)
@@ -339,7 +343,7 @@ class MainActivity : AppCompatActivity() {
         titleView.text = resolvedSlot.app.label
         // スロット内の情報量を絞り、行動ヒントだけを短く見せます。
         subtitleView.text = resolvedSlot.actionHint
-        card.setOnClickListener {
+        tapTarget.setOnClickListener {
             onboardingSupportPreferences.recordPredictionHit()
             launchApp(resolvedSlot.app)
         }
@@ -353,6 +357,7 @@ class MainActivity : AppCompatActivity() {
         bindAnchorSlot(
             spec = defaultAnchorSlots.first(),
             card = binding.anchorOneCard,
+            tapTarget = binding.anchorOneContent,
             iconView = binding.anchorOneIcon,
             titleView = binding.anchorOneTitle,
             subtitleView = binding.anchorOneSubtitle,
@@ -365,6 +370,7 @@ class MainActivity : AppCompatActivity() {
     private fun bindAnchorSlot(
         spec: AnchorSlotSpec,
         card: MaterialCardView,
+        tapTarget: View,
         iconView: ImageView,
         titleView: TextView,
         subtitleView: TextView,
@@ -377,7 +383,7 @@ class MainActivity : AppCompatActivity() {
         titleView.text = ""
         subtitleView.text = resolvedApp?.label ?: getString(R.string.anchor_unset)
 
-        card.setOnClickListener {
+        tapTarget.setOnClickListener {
             if (resolvedApp != null) {
                 onboardingSupportPreferences.recordAnchorLaunch()
                 launchApp(resolvedApp)
@@ -386,7 +392,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
         // 長押し時だけ固定先の変更ダイアログを開き、通常タップの起動導線を壊さないようにします。
-        card.setOnLongClickListener {
+        card.setOnClickListener(null)
+        tapTarget.setOnLongClickListener {
             showAnchorPicker(spec, isPinned = pinnedPackage != null)
             true
         }

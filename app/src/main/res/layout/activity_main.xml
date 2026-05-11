@@ -78,9 +78,12 @@
                     app:cardElevation="0dp">
 
                     <LinearLayout
+                        android:id="@+id/slotOneContent"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
@@ -137,9 +140,12 @@
                     app:cardElevation="0dp">
 
                     <LinearLayout
+                        android:id="@+id/slotTwoContent"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
@@ -195,9 +201,12 @@
                     app:cardElevation="0dp">
 
                     <LinearLayout
+                        android:id="@+id/slotThreeContent"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/bg_glass_slot_discovery"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
                         android:padding="14dp">
@@ -269,9 +278,12 @@
                 app:cardElevation="0dp">
 
                 <LinearLayout
+                    android:id="@+id/anchorOneContent"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_anchor_slot"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingTop="12dp"
