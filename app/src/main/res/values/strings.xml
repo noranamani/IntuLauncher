@@ -140,10 +140,10 @@
     <string name="setup_wizard_skip_note">権限が必要なものは後から必要な場面でだけ案内します。</string>
 
     <string name="home_section_title">今すぐ開く</string>
-    <string name="fixed_slot_title">いつもの 1 つ</string>
+    <string name="fixed_slot_title">常設</string>
     <string name="widget_preview_title">今のホームへ置く 3 提案</string>
     <string name="home_prediction_label">NOW (予測)</string>
-    <string name="home_anchor_label">常設 (Anchor)</string>
+    <string name="home_anchor_label">常設</string>
     <string name="home_footer_signature">IntuLauncher Beta</string>
     <string name="greeting_morning">Good Morning!</string>
     <string name="greeting_day">Hello!</string>

@@ -348,18 +348,8 @@ class MainActivity : AppCompatActivity() {
 
         iconView.setImageDrawable(resolvedSlot.app.icon)
         titleView.text = resolvedSlot.app.label
-
-        val slotKindLabel = if (resolvedSlot.spec.kind == SlotKind.DISCOVERY) {
-            getString(R.string.slot_kind_discovery)
-        } else {
-            getString(R.string.slot_kind_prediction)
-        }
-        val learningLabel = if (coldStartStatus.isLearning) {
-            getString(R.string.learning_badge_prefix)
-        } else {
-            ""
-        }
-        subtitleView.text = "$learningLabel$slotKindLabel / ${resolvedSlot.actionHint}"
+        // スロット内の情報量を絞り、行動ヒントだけを短く見せます。
+        subtitleView.text = resolvedSlot.actionHint
         card.setOnClickListener {
             onboardingSupportPreferences.recordPredictionHit()
             launchApp(resolvedSlot.app)
@@ -395,7 +385,7 @@ class MainActivity : AppCompatActivity() {
             ?: AppCatalog.findBestMatch(launchableApps, spec.defaultKeywords)
 
         iconView.setImageDrawable(resolvedApp?.icon ?: defaultAnchorIcon())
-        titleView.text = getString(R.string.fixed_slot_title)
+        titleView.text = ""
         subtitleView.text = resolvedApp?.label ?: getString(R.string.anchor_unset)
 
         card.setOnClickListener {
