@@ -64,7 +64,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotOneCard"
                     android:layout_width="0dp"
-                    android:layout_height="132dp"
+                    android:layout_height="128dp"
                     android:layout_marginEnd="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"
@@ -122,7 +122,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotTwoCard"
                     android:layout_width="0dp"
-                    android:layout_height="132dp"
+                    android:layout_height="128dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
                     android:layout_weight="1"
@@ -181,7 +181,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotThreeCard"
                     android:layout_width="0dp"
-                    android:layout_height="132dp"
+                    android:layout_height="128dp"
                     android:layout_marginStart="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"

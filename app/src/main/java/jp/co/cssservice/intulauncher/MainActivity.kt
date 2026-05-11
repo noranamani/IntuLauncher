@@ -15,8 +15,6 @@ import android.os.Bundle
 import android.provider.Settings.Secure
 import android.provider.Settings
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
@@ -147,19 +145,6 @@ class MainActivity : AppCompatActivity() {
         notificationInsightStore.seedDemoIfEmpty()
         adaptiveUpdateScheduler.ensureScheduled()
 
-        val gestureDetector = GestureDetector(
-            this,
-            object : GestureDetector.SimpleOnGestureListener() {
-                override fun onDoubleTap(e: MotionEvent): Boolean {
-                    toggleVisualMode()
-                    return true
-                }
-            },
-        )
-        binding.root.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            false
-        }
         binding.rootLayout.setOnLongClickListener {
             openSupportCenter()
             true
@@ -1082,10 +1067,9 @@ class MainActivity : AppCompatActivity() {
             VisualMode.FIXED -> {
                 val fixedUri = visualModePreferences.getFixedImageUri()
                 val state = ambientVisualManager.buildFixedState(fixedUri != null)
-                val fixedDrawable = fixedUri?.let { loadFixedBackgroundDrawable(it) }
-                if (fixedDrawable != null) {
+                if (fixedUri != null) {
                     animateBackgroundTo(ContextCompat.getColor(this, R.color.background_focus))
-                    binding.fixedBackgroundImageView.setImageDrawable(fixedDrawable)
+                    binding.fixedBackgroundImageView.setImageURI(fixedUri)
                     binding.fixedBackgroundImageView.visibility = View.VISIBLE
                 } else {
                     binding.fixedBackgroundImageView.setImageDrawable(null)
@@ -1115,9 +1099,9 @@ class MainActivity : AppCompatActivity() {
         val isMoveMode = profile == LauncherProfile.MORNING_COMMUTE
         val isNightMode = snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4
         val slotHeight = when {
-            isMoveMode -> 188
-            isNightMode -> 132
-            else -> 136
+            isMoveMode -> 154
+            isNightMode -> 124
+            else -> 128
         }
         val anchorHeight = if (isMoveMode) 108 else 92
 
