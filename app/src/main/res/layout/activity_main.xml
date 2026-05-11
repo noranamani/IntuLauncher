@@ -12,20 +12,26 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:alpha="0"
-        android:background="@drawable/bg_constellation_overlay" />
+        android:background="@drawable/bg_constellation_overlay"
+        android:clickable="false"
+        android:focusable="false" />
 
     <View
         android:id="@+id/notificationDimView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:alpha="0"
-        android:background="@color/scrim_dim" />
+        android:background="@color/scrim_dim"
+        android:clickable="false"
+        android:focusable="false" />
 
     <ImageView
         android:id="@+id/fixedBackgroundImageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clickable="false"
         android:contentDescription="@null"
+        android:focusable="false"
         android:scaleType="centerCrop"
         android:visibility="gone" />
 
@@ -64,7 +70,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotOneCard"
                     android:layout_width="0dp"
-                    android:layout_height="128dp"
+                    android:layout_height="114dp"
                     android:layout_marginEnd="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"
@@ -122,7 +128,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotTwoCard"
                     android:layout_width="0dp"
-                    android:layout_height="128dp"
+                    android:layout_height="114dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
                     android:layout_weight="1"
@@ -181,7 +187,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/slotThreeCard"
                     android:layout_width="0dp"
-                    android:layout_height="128dp"
+                    android:layout_height="114dp"
                     android:layout_marginStart="7dp"
                     android:layout_weight="1"
                     app:cardBackgroundColor="@android:color/transparent"

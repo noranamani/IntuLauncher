@@ -145,14 +145,14 @@ class MainActivity : AppCompatActivity() {
         notificationInsightStore.seedDemoIfEmpty()
         adaptiveUpdateScheduler.ensureScheduled()
 
-        binding.rootLayout.setOnLongClickListener {
-            openSupportCenter()
-            true
-        }
-
         binding.openAllAppsButton.setOnClickListener {
             onboardingSupportPreferences.recordDrawerOpened()
             startActivity(Intent(this, AppDrawerActivity::class.java))
+        }
+        // ホーム全体ではなく下部ボタン長押しへ逃がし、通常タップとの競合を避けます。
+        binding.openAllAppsButton.setOnLongClickListener {
+            openSupportCenter()
+            true
         }
         binding.quickSetupButton.setOnClickListener {
             openSetupWizard()
@@ -1099,9 +1099,9 @@ class MainActivity : AppCompatActivity() {
         val isMoveMode = profile == LauncherProfile.MORNING_COMMUTE
         val isNightMode = snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4
         val slotHeight = when {
-            isMoveMode -> 154
-            isNightMode -> 124
-            else -> 128
+            isMoveMode -> 136
+            isNightMode -> 112
+            else -> 114
         }
         val anchorHeight = if (isMoveMode) 108 else 92
 
