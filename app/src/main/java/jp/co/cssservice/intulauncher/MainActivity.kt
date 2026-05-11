@@ -145,6 +145,10 @@ class MainActivity : AppCompatActivity() {
         notificationInsightStore.seedDemoIfEmpty()
         adaptiveUpdateScheduler.ensureScheduled()
 
+        binding.rootLayout.setOnLongClickListener {
+            openSupportCenter()
+            true
+        }
         binding.openAllAppsButton.setOnClickListener {
             onboardingSupportPreferences.recordDrawerOpened()
             startActivity(Intent(this, AppDrawerActivity::class.java))
@@ -332,9 +336,13 @@ class MainActivity : AppCompatActivity() {
             iconView.setImageDrawable(ContextCompat.getDrawable(this, android.R.drawable.ic_menu_search))
             titleView.text = getString(R.string.slot_empty_title_short)
             subtitleView.text = getString(R.string.slot_empty_subtitle_short)
-            tapTarget.setOnClickListener {
-                showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
-            }
+            bindTapTargets(
+                views = listOf(card, tapTarget, iconView, titleView, subtitleView),
+                onClick = {
+                    showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
+                },
+                onLongClick = { openSupportCenter() },
+            )
             animateSlotIfNeeded(card, slotIndex, null)
             return
         }
@@ -343,10 +351,14 @@ class MainActivity : AppCompatActivity() {
         titleView.text = resolvedSlot.app.label
         // スロット内の情報量を絞り、行動ヒントだけを短く見せます。
         subtitleView.text = resolvedSlot.actionHint
-        tapTarget.setOnClickListener {
-            onboardingSupportPreferences.recordPredictionHit()
-            launchApp(resolvedSlot.app)
-        }
+        bindTapTargets(
+            views = listOf(card, tapTarget, iconView, titleView, subtitleView),
+            onClick = {
+                onboardingSupportPreferences.recordPredictionHit()
+                launchApp(resolvedSlot.app)
+            },
+            onLongClick = { openSupportCenter() },
+        )
         animateSlotIfNeeded(card, slotIndex, resolvedSlot.app.packageName)
     }
 
@@ -383,20 +395,20 @@ class MainActivity : AppCompatActivity() {
         titleView.text = ""
         subtitleView.text = resolvedApp?.label ?: getString(R.string.anchor_unset)
 
-        tapTarget.setOnClickListener {
-            if (resolvedApp != null) {
-                onboardingSupportPreferences.recordAnchorLaunch()
-                launchApp(resolvedApp)
-            } else {
-                showAnchorPicker(spec, isPinned = false)
-            }
-        }
+        bindTapTargets(
+            views = listOf(card, tapTarget, iconView, titleView, subtitleView),
+            onClick = {
+                if (resolvedApp != null) {
+                    onboardingSupportPreferences.recordAnchorLaunch()
+                    launchApp(resolvedApp)
+                } else {
+                    showAnchorPicker(spec, isPinned = false)
+                }
+            },
+            onLongClick = { showAnchorPicker(spec, isPinned = pinnedPackage != null) },
+        )
         // 長押し時だけ固定先の変更ダイアログを開き、通常タップの起動導線を壊さないようにします。
         card.setOnClickListener(null)
-        tapTarget.setOnLongClickListener {
-            showAnchorPicker(spec, isPinned = pinnedPackage != null)
-            true
-        }
     }
 
     /**
@@ -1144,6 +1156,27 @@ class MainActivity : AppCompatActivity() {
      */
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    /**
+     * 複数の表示要素へ同じタップ動作を付与し、どこを触っても同じ反応になるようにします。
+     */
+    private fun bindTapTargets(
+        views: List<View>,
+        onClick: () -> Unit,
+        onLongClick: (() -> Unit)? = null,
+    ) {
+        views.forEach { view ->
+            view.setOnClickListener { onClick() }
+            if (onLongClick != null) {
+                view.setOnLongClickListener {
+                    onLongClick()
+                    true
+                }
+            } else {
+                view.setOnLongClickListener(null)
+            }
+        }
     }
 
     /**
