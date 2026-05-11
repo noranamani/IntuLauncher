@@ -1,5 +1,9 @@
 package jp.co.cssservice.intulauncher
 
+import android.animation.AnimatorSet
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
@@ -13,7 +17,10 @@ import android.provider.Settings
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -83,6 +90,12 @@ class MainActivity : AppCompatActivity() {
 
     /** アンカースロットやアプリ一覧ダイアログで使う全アプリ一覧です。 */
     private var launchableApps: List<LaunchableApp> = emptyList()
+
+    /** スロットごとの前回表示アプリを保持し、入れ替わりアニメーション判定に使います。 */
+    private val lastRenderedSlotPackages = mutableMapOf<Int, String?>()
+
+    /** 背景遷移アニメーションの参照です。 */
+    private var backgroundAnimator: ValueAnimator? = null
 
     /** 固定背景画像の選択ランチャーです。 */
     private val pickBackgroundLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -258,10 +271,17 @@ class MainActivity : AppCompatActivity() {
         snapshot: ContextSnapshot,
         coldStartStatus: ColdStartStatus,
     ) {
+        binding.greetingText.text = buildGreeting(snapshot)
         binding.headlineText.text = profile.headline
         binding.subheadlineText.text = profile.subheadline
         binding.profileChip.text = buildProfileChipLabel(profile, coldStartStatus)
         binding.timeText.text = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
+        binding.heroMetricsText.text = buildHeroMetrics(snapshot)
+        binding.modeLabelText.text = when {
+            profile == LauncherProfile.MORNING_COMMUTE -> getString(R.string.move_mode_label)
+            snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4 -> getString(R.string.night_mode_label)
+            else -> profile.displayName
+        }
         binding.signalSummaryText.text = buildSignalSummary(snapshot)
         binding.coldStartStatusText.text = coldStartStatus.summary
         binding.coldStartStatusText.alpha = if (coldStartStatus.isLearning) 0.95f else 0.78f
@@ -272,6 +292,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun renderDynamicSlots(slots: List<ResolvedSlot>, coldStartStatus: ColdStartStatus) {
         bindDynamicSlot(
+            slotIndex = 0,
             card = binding.slotOneCard,
             iconView = binding.slotOneIcon,
             titleView = binding.slotOneTitle,
@@ -280,6 +301,7 @@ class MainActivity : AppCompatActivity() {
             coldStartStatus = coldStartStatus,
         )
         bindDynamicSlot(
+            slotIndex = 1,
             card = binding.slotTwoCard,
             iconView = binding.slotTwoIcon,
             titleView = binding.slotTwoTitle,
@@ -288,6 +310,7 @@ class MainActivity : AppCompatActivity() {
             coldStartStatus = coldStartStatus,
         )
         bindDynamicSlot(
+            slotIndex = 2,
             card = binding.slotThreeCard,
             iconView = binding.slotThreeIcon,
             titleView = binding.slotThreeTitle,
@@ -301,6 +324,7 @@ class MainActivity : AppCompatActivity() {
      * 1 つの動的スロットを描画し、学習中の案内も重ねて表示します。
      */
     private fun bindDynamicSlot(
+        slotIndex: Int,
         card: MaterialCardView,
         iconView: ImageView,
         titleView: TextView,
@@ -308,12 +332,6 @@ class MainActivity : AppCompatActivity() {
         resolvedSlot: ResolvedSlot?,
         coldStartStatus: ColdStartStatus,
     ) {
-        val backgroundColor = if (resolvedSlot?.spec?.kind == SlotKind.DISCOVERY) {
-            R.color.anchor_surface
-        } else {
-            R.color.panel_surface_soft
-        }
-        card.setCardBackgroundColor(ContextCompat.getColor(this, backgroundColor))
         card.alpha = if (coldStartStatus.isLearning) 0.96f else 1.0f
 
         // 候補が解決できない場合でも、全アプリ一覧へ逃がして操作を止めないようにします。
@@ -324,6 +342,7 @@ class MainActivity : AppCompatActivity() {
             card.setOnClickListener {
                 showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
             }
+            animateSlotIfNeeded(card, slotIndex, null)
             return
         }
 
@@ -345,6 +364,7 @@ class MainActivity : AppCompatActivity() {
             onboardingSupportPreferences.recordPredictionHit()
             launchApp(resolvedSlot.app)
         }
+        animateSlotIfNeeded(card, slotIndex, resolvedSlot.app.packageName)
     }
 
     /**
@@ -673,6 +693,12 @@ class MainActivity : AppCompatActivity() {
         val insight = notificationInsightStore.buildInsight(profile)
         binding.notificationSummaryText.text = insight.summary
         binding.notificationPromptText.text = insight.prompt
+        val shouldEmphasize = insight.prompt.isNotBlank()
+        binding.notificationDimView.animate()
+            .alpha(if (shouldEmphasize) 0.28f else 0f)
+            .setDuration(420L)
+            .start()
+        startReplyPulse(shouldEmphasize)
     }
 
     /**
@@ -1039,11 +1065,17 @@ class MainActivity : AppCompatActivity() {
         when (visualModePreferences.getVisualMode()) {
             VisualMode.AMBIENT -> {
                 val state = ambientVisualManager.buildAmbientState(profile, snapshot, notificationWeight)
-                binding.root.setBackgroundColor(state.backgroundColor)
+                animateBackgroundTo(state.backgroundColor)
                 binding.rootLayout.background = null
-                binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                binding.rootLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 binding.visualModeChip.text = state.mode.displayName
                 binding.visualSummaryText.text = "${state.label} / ${state.description}"
+                binding.ambientStatusText.visibility = View.VISIBLE
+                binding.ambientStatusText.text = getString(R.string.ambient_sampling_status)
+                binding.constellationOverlayView.animate()
+                    .alpha(if (snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4) 0.55f else 0f)
+                    .setDuration(1200L)
+                    .start()
             }
 
             VisualMode.FIXED -> {
@@ -1051,15 +1083,17 @@ class MainActivity : AppCompatActivity() {
                 val state = ambientVisualManager.buildFixedState(fixedUri != null)
                 val fixedDrawable = fixedUri?.let { loadFixedBackgroundDrawable(it) }
                 if (fixedDrawable != null) {
-                    binding.root.setBackgroundColor(ContextCompat.getColor(this, R.color.background_focus))
+                    animateBackgroundTo(ContextCompat.getColor(this, R.color.background_focus))
                     binding.rootLayout.background = fixedDrawable
                 } else {
                     binding.rootLayout.background = null
-                    binding.root.setBackgroundColor(state.backgroundColor)
-                    binding.rootLayout.setBackgroundColor(state.backgroundColor)
+                    animateBackgroundTo(state.backgroundColor)
+                    binding.rootLayout.setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
                 binding.visualModeChip.text = state.mode.displayName
                 binding.visualSummaryText.text = "${state.label} / ${state.description}"
+                binding.ambientStatusText.visibility = View.GONE
+                binding.constellationOverlayView.animate().alpha(0f).setDuration(600L).start()
                 if (fixedUri == null) {
                     binding.selectBackgroundButton.text = getString(R.string.select_background_button)
                 } else {
@@ -1079,23 +1113,37 @@ class MainActivity : AppCompatActivity() {
         val isMoveMode = profile == LauncherProfile.MORNING_COMMUTE
         val isNightMode = snapshot.hourOfDay >= 20 || snapshot.hourOfDay <= 4
         val slotHeight = when {
-            isMoveMode -> 196
+            isMoveMode -> 264
             isNightMode -> 156
             else -> 168
         }
-        val anchorHeight = if (isMoveMode) 118 else 104
+        val anchorHeight = if (isMoveMode) 148 else 112
 
         listOf(binding.slotOneCard, binding.slotTwoCard, binding.slotThreeCard).forEach { card ->
             val params = card.layoutParams
             params.height = dp(slotHeight)
             card.layoutParams = params
             card.radius = dp(if (isMoveMode) 30 else 28).toFloat()
+            card.animate()
+                .scaleX(if (isMoveMode) 1.02f else 1.0f)
+                .scaleY(if (isMoveMode) 1.02f else 1.0f)
+                .setDuration(420L)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
         }
 
         binding.anchorOneCard.layoutParams = binding.anchorOneCard.layoutParams.apply {
             height = dp(anchorHeight)
         }
         binding.anchorOneCard.radius = dp(if (isMoveMode) 34 else 30).toFloat()
+        binding.anchorOneCard.animate()
+            .scaleX(if (isMoveMode) 1.01f else 1.0f)
+            .scaleY(if (isMoveMode) 1.01f else 1.0f)
+            .setDuration(420L)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+        binding.heroMetricsText.textSize = if (isMoveMode) 38f else 18f
+        binding.modeLabelText.textSize = if (isMoveMode) 18f else 13f
     }
 
     /**
@@ -1103,6 +1151,96 @@ class MainActivity : AppCompatActivity() {
      */
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
+    }
+
+    /**
+     * 時間帯に応じた挨拶文を返します。
+     */
+    private fun buildGreeting(snapshot: ContextSnapshot): String {
+        val greeting = when (snapshot.hourOfDay) {
+            in 5..10 -> getString(R.string.greeting_morning)
+            in 11..17 -> getString(R.string.greeting_day)
+            else -> getString(R.string.greeting_evening)
+        }
+        return "$greeting (${getString(R.string.header_location_unknown)})"
+    }
+
+    /**
+     * ヘッダー中央に出す大きな状態行を返します。
+     */
+    private fun buildHeroMetrics(snapshot: ContextSnapshot): String {
+        val time = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()))
+        return "$time  •  ${getString(R.string.header_location_unknown)}  •  ${snapshot.batteryPercent}%"
+    }
+
+    /**
+     * 背景色をゆっくり混ぜるように遷移させます。
+     */
+    private fun animateBackgroundTo(targetColor: Int) {
+        val currentColor = (binding.root.background as? android.graphics.drawable.ColorDrawable)?.color
+            ?: ContextCompat.getColor(this, R.color.background_focus)
+        backgroundAnimator?.cancel()
+        backgroundAnimator = ValueAnimator.ofObject(ArgbEvaluator(), currentColor, targetColor).apply {
+            duration = 1800L
+            addUpdateListener { animator ->
+                binding.root.setBackgroundColor(animator.animatedValue as Int)
+            }
+            start()
+        }
+    }
+
+    /**
+     * スロット差し替え時に奥から手前へ出るような軽いバウンドを付けます。
+     */
+    private fun animateSlotIfNeeded(
+        card: MaterialCardView,
+        slotIndex: Int,
+        packageName: String?,
+    ) {
+        val previousPackage = lastRenderedSlotPackages[slotIndex]
+        if (previousPackage == packageName) {
+            return
+        }
+        lastRenderedSlotPackages[slotIndex] = packageName
+        if (previousPackage == null) {
+            return
+        }
+
+        val alphaAnimator = ObjectAnimator.ofFloat(card, View.ALPHA, 0.55f, 1f)
+        val scaleXAnimator = ObjectAnimator.ofFloat(card, View.SCALE_X, 0.94f, 1.03f, 1f)
+        val scaleYAnimator = ObjectAnimator.ofFloat(card, View.SCALE_Y, 0.94f, 1.03f, 1f)
+        val translationAnimator = ObjectAnimator.ofFloat(card, View.TRANSLATION_Y, 18f, -6f, 0f)
+
+        AnimatorSet().apply {
+            playTogether(alphaAnimator, scaleXAnimator, scaleYAnimator, translationAnimator)
+            duration = 540L
+            interpolator = OvershootInterpolator(1.15f)
+            start()
+        }
+    }
+
+    /**
+     * 通知返信ボタンへ軽いパルス感を付けます。
+     */
+    private fun startReplyPulse(shouldPulse: Boolean) {
+        binding.notificationSummaryButton.animate().cancel()
+        if (!shouldPulse) {
+            binding.notificationSummaryButton.scaleX = 1f
+            binding.notificationSummaryButton.scaleY = 1f
+            return
+        }
+        binding.notificationSummaryButton.animate()
+            .scaleX(1.04f)
+            .scaleY(1.04f)
+            .setDuration(360L)
+            .withEndAction {
+                binding.notificationSummaryButton.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(360L)
+                    .start()
+            }
+            .start()
     }
 
     /**

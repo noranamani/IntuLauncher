@@ -17,11 +17,12 @@
         android:paddingBottom="32dp">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/setup_wizard_title"
+            android:gravity="center"
+            android:text="@string/setup_understanding_you"
             android:textColor="@color/lime"
-            android:textSize="15sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
@@ -29,9 +30,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:gravity="center"
             android:textColor="@color/text_muted"
             android:textSize="13sp"
-            tools:text="STEP 1 / 5" />
+            tools:text="15%" />
 
         <ProgressBar
             android:id="@+id/stepProgressBar"
@@ -47,14 +49,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            app:cardBackgroundColor="@color/panel_surface"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="28dp"
-            app:strokeColor="@color/panel_stroke"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_setup_card"
                 android:orientation="vertical"
                 android:padding="20dp">
 
@@ -92,14 +95,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/panel_surface_soft"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
-            app:strokeColor="@color/panel_stroke"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_setup_card"
                 android:orientation="vertical"
                 android:padding="18dp">
 
@@ -128,14 +132,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            app:cardBackgroundColor="@color/panel_surface_soft"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
-            app:strokeColor="@color/panel_stroke"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_setup_card"
                 android:orientation="vertical"
                 android:padding="18dp">
 
@@ -164,14 +169,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            app:cardBackgroundColor="@color/panel_surface_soft"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
-            app:strokeColor="@color/panel_stroke"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_setup_card"
                 android:orientation="vertical"
                 android:padding="18dp">
 
@@ -201,14 +207,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:visibility="gone"
-            app:cardBackgroundColor="@color/panel_surface_soft"
+            app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
-            app:strokeColor="@color/panel_stroke"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_setup_card"
                 android:orientation="vertical"
                 android:padding="18dp">
 
@@ -258,7 +265,7 @@
                 android:text="@string/setup_wizard_next"
                 android:textAllCaps="false"
                 android:textColor="@color/background_focus"
-                app:backgroundTint="@color/lime" />
+                android:background="@drawable/bg_neon_button" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -82,8 +82,9 @@ class SetupWizardActivity : AppCompatActivity() {
      * 現在ステップの表示内容を描画します。
      */
     private fun renderStep() {
-        binding.stepCounterText.text = getString(R.string.setup_wizard_step_format, currentStep + 1, LAST_STEP_INDEX + 1)
-        binding.stepProgressBar.progress = currentStep + 1
+        binding.stepCounterText.text = "${STEP_PROGRESS[currentStep]}%"
+        binding.stepProgressBar.max = 100
+        binding.stepProgressBar.progress = STEP_PROGRESS[currentStep]
         binding.previousButton.text = if (currentStep == 0) {
             getString(R.string.cancel)
         } else {
@@ -299,10 +300,14 @@ class SetupWizardActivity : AppCompatActivity() {
         bodyView.text = choice.body
 
         val strokeColor = if (choice.selected) getColor(R.color.lime) else getColor(R.color.panel_stroke)
-        val backgroundColor = if (choice.selected) getColor(R.color.anchor_surface) else getColor(R.color.panel_surface_soft)
+        val backgroundRes = if (choice.selected) {
+            R.drawable.bg_setup_card_selected
+        } else {
+            R.drawable.bg_setup_card
+        }
 
-        // 選択中のカードだけ色と枠線を強め、現在地を視覚的に伝えます。
-        card.setCardBackgroundColor(backgroundColor)
+        // 選択中のカードだけ発光感を強め、現在地を視覚的に伝えます。
+        card.setBackgroundResource(backgroundRes)
         card.strokeColor = strokeColor
         card.strokeWidth = if (choice.selected) dp(2) else dp(1)
     }
@@ -365,6 +370,9 @@ class SetupWizardActivity : AppCompatActivity() {
     companion object {
         /** 最終ステップ番号です。 */
         private const val LAST_STEP_INDEX = 4
+
+        /** ステップごとの進捗率です。 */
+        private val STEP_PROGRESS = listOf(15, 35, 55, 75, 100)
     }
 }
 

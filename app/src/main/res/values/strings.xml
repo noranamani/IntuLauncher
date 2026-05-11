@@ -142,4 +142,16 @@
     <string name="home_section_title">今すぐ開く</string>
     <string name="fixed_slot_title">いつもの 1 つ</string>
     <string name="widget_preview_title">今のホームへ置く 3 提案</string>
+    <string name="home_prediction_label">NOW (予測)</string>
+    <string name="home_anchor_label">常設 (Anchor)</string>
+    <string name="home_footer_signature">IntuLauncher Beta</string>
+    <string name="greeting_morning">Good Morning!</string>
+    <string name="greeting_day">Hello!</string>
+    <string name="greeting_evening">Good Evening!</string>
+    <string name="header_location_unknown">Ambient</string>
+    <string name="move_mode_label">移動中 (On-the-go): 高視認モード</string>
+    <string name="night_mode_label">Night Mode: リラックス表示</string>
+    <string name="ambient_sampling_status">((AI)) 生成プロセス: 雨をサンプリング中</string>
+    <string name="notification_reply_action">返信を見る</string>
+    <string name="setup_understanding_you">Understanding You...</string>
 </resources>
