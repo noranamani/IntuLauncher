@@ -15,6 +15,10 @@
         android:theme="@style/Theme.IntuLauncher">
 
         <activity
+            android:name=".LauncherSupportActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".SetupWizardActivity"
             android:exported="false" />
 

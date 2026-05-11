@@ -12,14 +12,15 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bg_widget_glass"
         android:orientation="vertical"
-        android:padding="18dp">
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/widgetProfileText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center"
             android:textColor="#9AE4FF"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <TextView
@@ -27,47 +28,67 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:gravity="center"
             android:textColor="#F3F8FF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/widgetSlotOneText"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_widget_slot"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp"
-            android:textColor="#F6F8FD"
-            android:textSize="12sp" />
+            android:layout_marginTop="12dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal"
+            android:weightSum="3">
 
-        <TextView
-            android:id="@+id/widgetSlotTwoText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_widget_slot"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp"
-            android:textColor="#F6F8FD"
-            android:textSize="12sp" />
+            <TextView
+                android:id="@+id/widgetSlotOneText"
+                android:layout_width="0dp"
+                android:layout_height="112dp"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_widget_slot"
+                android:gravity="bottom|center_horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="12dp"
+                android:textAlignment="center"
+                android:textColor="#F6F8FD"
+                android:textSize="11sp" />
 
-        <TextView
-            android:id="@+id/widgetSlotThreeText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_widget_slot"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp"
-            android:textColor="#F6F8FD"
-            android:textSize="12sp" />
+            <TextView
+                android:id="@+id/widgetSlotTwoText"
+                android:layout_width="0dp"
+                android:layout_height="112dp"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_widget_slot"
+                android:gravity="bottom|center_horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="12dp"
+                android:textAlignment="center"
+                android:textColor="#F6F8FD"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/widgetSlotThreeText"
+                android:layout_width="0dp"
+                android:layout_height="112dp"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_widget_slot"
+                android:gravity="bottom|center_horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="12dp"
+                android:textAlignment="center"
+                android:textColor="#F6F8FD"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

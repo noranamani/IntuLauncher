@@ -32,19 +32,9 @@
         android:paddingEnd="20dp"
         android:paddingBottom="28dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/home_prediction_label"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
             android:baselineAligned="false"
             android:orientation="horizontal"
             android:weightSum="3">
@@ -195,21 +185,11 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="26dp"
-            android:gravity="center"
-            android:text="@string/home_anchor_label"
-            android:textColor="@color/warm_amber"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/anchorOneCard"
             android:layout_width="match_parent"
             android:layout_height="112dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="28dp"
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="34dp"
             app:cardElevation="0dp">
@@ -261,14 +241,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/footerText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="@string/home_footer_signature"
-            android:textColor="@color/text_muted"
-            android:textSize="11sp" />
     </LinearLayout>
 
     <LinearLayout

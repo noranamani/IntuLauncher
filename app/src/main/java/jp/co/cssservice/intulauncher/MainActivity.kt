@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
             false
         }
         binding.rootLayout.setOnLongClickListener {
-            toggleVisualMode()
+            openSupportCenter()
             true
         }
 
@@ -706,6 +706,13 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openSetupWizard() {
         setupWizardLauncher.launch(Intent(this, SetupWizardActivity::class.java))
+    }
+
+    /**
+     * 設定・通知・レポート用の補助画面を開きます。
+     */
+    private fun openSupportCenter() {
+        startActivity(Intent(this, LauncherSupportActivity::class.java))
     }
 
     /**

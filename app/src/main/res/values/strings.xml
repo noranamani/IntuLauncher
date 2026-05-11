@@ -154,4 +154,13 @@
     <string name="ambient_sampling_status">((AI)) 生成プロセス: 雨をサンプリング中</string>
     <string name="notification_reply_action">返信を見る</string>
     <string name="setup_understanding_you">Understanding You...</string>
+    <string name="support_title">サポートセンター</string>
+    <string name="support_subtitle">通知、設定、レポートはホーム本体から分離してここへ集約します。</string>
+    <string name="support_setup_button">初期設定を開く</string>
+    <string name="support_notification_button">通知インサイトを見る</string>
+    <string name="support_report_button">時短レポートを見る</string>
+    <string name="support_preview_button">ホーム変化を見る</string>
+    <string name="support_home_settings_button">ホーム設定を開く</string>
+    <string name="support_usage_access_button">利用状況アクセスを許可</string>
+    <string name="support_notification_access_button">通知アクセスを許可</string>
 </resources>

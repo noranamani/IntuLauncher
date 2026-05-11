@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_focus"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/support_title"
+            android:textColor="@color/text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/support_subtitle"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/setupButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/support_setup_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/notificationButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_notification_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/reportButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_report_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/previewButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_preview_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/homeSettingsButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_home_settings_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/usageAccessButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_usage_access_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/notificationAccessButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_notification_access_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
