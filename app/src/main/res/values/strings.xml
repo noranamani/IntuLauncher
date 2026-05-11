@@ -168,4 +168,10 @@
     <string name="support_home_settings_button">ホーム設定を開く</string>
     <string name="support_usage_access_button">利用状況アクセスを許可</string>
     <string name="support_notification_access_button">通知アクセスを許可</string>
+    <string name="slot_empty_title_short">アプリを追加</string>
+    <string name="slot_empty_subtitle_short">タップして選ぶ</string>
+    <string name="home_anchor_label_short">常設</string>
+    <string name="home_app_drawer_button">アプリ一覧</string>
+    <string name="app_drawer_title">アプリ一覧</string>
+    <string name="app_drawer_subtitle">インストール済みのアプリをすべて表示しています。</string>
 </resources>

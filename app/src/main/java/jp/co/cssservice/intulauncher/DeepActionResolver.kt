@@ -3,33 +3,27 @@ package jp.co.cssservice.intulauncher
 import java.util.Locale
 
 /**
- * アプリ推薦結果に対して、次に起こりそうな操作を説明文として付与する補助クラスです。
+ * アプリの種類に応じて、ホームのスロット内へ短い行動ヒントを返す解決クラスです。
  */
 object DeepActionResolver {
     /**
-     * アプリ種別とスロット種別から Deep Action 風の案内文を生成します。
+     * アプリの種類とスロット種別から、1 行で収まる簡潔なヒント文言を返します。
      */
     fun describe(app: LaunchableApp, slotKind: SlotKind): String {
         val packageText = app.packageName.lowercase(Locale.getDefault())
         val labelText = app.label.lowercase(Locale.getDefault())
-        val kindPrefix = if (slotKind == SlotKind.DISCOVERY) {
-            "発見ヒント"
-        } else {
-            "次の操作"
-        }
 
-        // よく使われるアプリ群だけ個別文言を持たせ、その他は汎用ヒントにフォールバックします。
-        val action = when {
-            "youtube" in packageText || "youtube" in labelText -> "前回の視聴導線へそのまま戻れます"
-            "spotify" in packageText || "music" in labelText -> "今の流れに合う音声体験へすぐ入れます"
-            "map" in packageText || "navi" in packageText || "地図" in app.label -> "今の状況に合う経路確認へ直行できます"
-            "calendar" in packageText || "schedule" in labelText -> "次の予定をメニュー探索なしで開けます"
-            "slack" in packageText || "teams" in packageText || "line" in packageText -> "今やり取りすべき会話へ素早く入れます"
-            "camera" in packageText -> "撮り逃したくない瞬間にすぐ反応できます"
-            "kindle" in packageText || "reader" in labelText -> "読みかけの文脈に戻りやすくなります"
-            else -> "次に取りそうな行動へ自然につなげます"
+        // ホームの狭いスロット内で読み切れるよう、長文説明ではなく短い行動語に絞ります。
+        return when {
+            "youtube" in packageText || "youtube" in labelText -> "続きから再生"
+            "spotify" in packageText || "music" in labelText -> "音楽を再開"
+            "map" in packageText || "navi" in packageText || "地図" in app.label -> "経路を確認"
+            "calendar" in packageText || "schedule" in labelText -> "予定を確認"
+            "slack" in packageText || "teams" in packageText || "line" in packageText -> "未読を確認"
+            "camera" in packageText -> "すぐ撮る"
+            "kindle" in packageText || "reader" in labelText -> "続きを読む"
+            slotKind == SlotKind.DISCOVERY -> "新しい使い方"
+            else -> "すぐ開けます"
         }
-
-        return "$kindPrefix: $action。"
     }
 }

@@ -23,6 +23,7 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -125,6 +126,11 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // ホーム画面では戻る操作で離脱しないようにし、誤操作で抜けるのを防ぎます。
+        onBackPressedDispatcher.addCallback(this) {
+            // no-op
+        }
+
         appCatalog = AppCatalog(this)
         anchorPreferences = AnchorPreferences(this)
         coldStartPreferences = ColdStartPreferences(this)
@@ -161,9 +167,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.openAllAppsButton.setOnClickListener {
             onboardingSupportPreferences.recordDrawerOpened()
-            showAppPicker(title = getString(R.string.app_picker_title)) { app ->
-                launchApp(app)
-            }
+            startActivity(Intent(this, AppDrawerActivity::class.java))
         }
         binding.quickSetupButton.setOnClickListener {
             openSetupWizard()
@@ -337,8 +341,8 @@ class MainActivity : AppCompatActivity() {
         // 候補が解決できない場合でも、全アプリ一覧へ逃がして操作を止めないようにします。
         if (resolvedSlot?.app == null) {
             iconView.setImageDrawable(ContextCompat.getDrawable(this, android.R.drawable.ic_menu_search))
-            titleView.text = getString(R.string.slot_empty_title)
-            subtitleView.text = getString(R.string.slot_empty_subtitle)
+            titleView.text = getString(R.string.slot_empty_title_short)
+            subtitleView.text = getString(R.string.slot_empty_subtitle_short)
             card.setOnClickListener {
                 showAppPicker(title = getString(R.string.app_picker_title), onSelected = ::launchApp)
             }

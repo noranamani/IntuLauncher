@@ -25,12 +25,12 @@
         android:id="@+id/rootLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingStart="20dp"
         android:paddingTop="28dp"
         android:paddingEnd="20dp"
-        android:paddingBottom="28dp">
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -77,13 +77,20 @@
 
                     <TextView
                         android:id="@+id/slotOneSubtitle"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:maxLines="4"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_slot_hint_chip"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:minLines="2"
+                        android:paddingStart="10dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="6dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        tools:text="返信が必要なメールを開く" />
+                        android:textSize="11sp"
+                        tools:text="未読を確認" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -126,13 +133,20 @@
 
                     <TextView
                         android:id="@+id/slotTwoSubtitle"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:maxLines="4"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_slot_hint_chip"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:minLines="2"
+                        android:paddingStart="10dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="6dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        tools:text="次の予定を確認" />
+                        android:textSize="11sp"
+                        tools:text="予定を確認" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -174,13 +188,20 @@
 
                     <TextView
                         android:id="@+id/slotThreeSubtitle"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:maxLines="4"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_slot_hint_chip"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:minLines="2"
+                        android:paddingStart="10dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="6dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        tools:text="発見枠 / 乗換を先読み" />
+                        android:textSize="11sp"
+                        tools:text="経路を確認" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -191,11 +212,20 @@
             android:layout_marginTop="28dp"
             android:background="#52D4AF37" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/home_anchor_label_short"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/anchorOneCard"
             android:layout_width="match_parent"
             android:layout_height="112dp"
-            android:layout_marginTop="28dp"
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="34dp"
             app:cardElevation="0dp">
@@ -246,6 +276,25 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openAllAppsButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/home_app_drawer_button"
+            android:textAllCaps="false"
+            android:textColor="@color/text_primary"
+            app:icon="@android:drawable/ic_menu_sort_by_size"
+            app:iconGravity="textStart"
+            app:iconTint="@color/text_primary"
+            app:strokeColor="@color/text_secondary" />
 
     </LinearLayout>
 
@@ -337,11 +386,6 @@
 
         <FrameLayout
             android:id="@+id/widgetHostContainer"
-            android:layout_width="1dp"
-            android:layout_height="1dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/openAllAppsButton"
             android:layout_width="1dp"
             android:layout_height="1dp" />
 
