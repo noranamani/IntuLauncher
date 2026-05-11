@@ -37,11 +37,41 @@
             android:layout_marginTop="20dp"
             android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/visualModeStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/visualModeButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_visual_mode_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/fixedBackgroundButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/support_fixed_background_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                app:strokeColor="@color/panel_stroke" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/setupButton"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:text="@string/support_setup_button"
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary"

@@ -157,6 +157,11 @@
     <string name="support_title">サポートセンター</string>
     <string name="support_subtitle">通知、設定、レポートはホーム本体から分離してここへ集約します。</string>
     <string name="support_setup_button">初期設定を開く</string>
+    <string name="support_visual_mode_button">背景モードを選ぶ</string>
+    <string name="support_fixed_background_button">固定背景画像を選ぶ</string>
+    <string name="support_visual_mode_status">現在の背景: %1$s / 固定画像: %2$s</string>
+    <string name="support_fixed_background_ready">設定済み</string>
+    <string name="support_fixed_background_missing">未設定</string>
     <string name="support_notification_button">通知インサイトを見る</string>
     <string name="support_report_button">時短レポートを見る</string>
     <string name="support_preview_button">ホーム変化を見る</string>
